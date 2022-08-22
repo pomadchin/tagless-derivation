@@ -23,10 +23,10 @@ object DeriveMacros {
 
     for {
       member <- cls.methodMembers
-      //is abstract method, not implemented
+      // is abstract method, not implemented
       if member.flags.is(Flags.Deferred)
 
-      //TODO: is that public?
+      // TODO: is that public?
       // TODO? if member.privateWithin
       if !member.flags.is(Flags.Private)
       if !member.flags.is(Flags.Protected)
@@ -37,7 +37,7 @@ object DeriveMacros {
     } yield member
   }
 
-  inline def functorInvoke[T] = ${functor[T]}
+  inline def functorInvoke[T] = ${ functor[T] }
 
   def functor[Alg](using t: Type[Alg])(using Quotes) = {
     import quotes.reflect.*
@@ -64,79 +64,17 @@ object DeriveMacros {
     Expr(s)
   }
 
-  inline def functorKInvoke[Alg[_[_]]] = ${functorK[Alg]}
+  inline def functorKInvoke[Alg[_[_]]] = ${ functorK[Alg] }
 
   @experimental def functorK[Alg[_[_]]: Type](using Quotes): Expr[FunctorK[Alg]] = {
     import quotes.reflect.*
 
-    val methods = definedMethodsInType[Alg]
-    println("---------")
-    println(methods)
-    // println(TypeRepr.of[Alg].typeSymbol.fullName)
-    // println(TypeRepr.of[Alg].typeSymbol.declarations)
-    // println(TypeRepr.of[Alg].typeSymbol.methodMembers)
-    println("---------")
-
-    val className = "_Anon"
-    val parents = List(TypeTree.of[Object], TypeTree.of[Alg])
-
-    def decls(cls: Symbol): List[Symbol] = methods.map { method =>
-      method.tree.changeOwner(cls) match {
-        case DefDef(name, clauses, typedTree,_) =>
-          val tpeRepr = TypeRepr.of(using typedTree.tpe.asType)
-          val names = clauses.flatMap(_.params.collect { case v: ValDef => v.name })
-          val tpes = clauses.flatMap(_.params.collect { case v: ValDef => v.tpt.tpe })
-
-          // nullary methods
-          val methodType = if (clauses.isEmpty) ByNameType(tpeRepr) else MethodType(names)(_ => tpes, _ => tpeRepr)
-          Symbol.newMethod(cls, name, methodType, flags = Flags.EmptyFlags /*TODO: method.flags */, privateWithin = method.privateWithin.fold(Symbol.noSymbol)(_.typeSymbol))
-        case _ =>
-          report.errorAndAbort(s"Cannot detect type of method: ${method.name}")
-      }
-    }
-
-    val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
-
-    // val ress: Term = '{"fk"}.asTerm
-    val body = cls.declaredMethods.map { method => DefDef(method, argss => Some('{"fk(af.method)"}.asTerm)) }
-    
-
-    // Term['G']
-
-    // Literal
-
-    /** 
-     * List(
-     *  DefDef(
-    *     id,
-         List(),
-         TypeTree[
-         AppliedType(
-           TypeParamRef(F),
-            List(
-            TypeRef(
-            TermRef(
-              ThisType(
-                TypeRef(NoPrefix,module class <root>)
-                ),object scala),class Int)))],
-                Literal(Constant(fk(af.method))))) */
-
-    val clsDef = ClassDef(cls, parents, body = body)
-    val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg])
-    val ee = Block(List(clsDef), newCls).asExpr
-
-    println("============")
-    println(ee.show)
-    println("============")
-
     val res = '{
-      // definedMethodsInType[Alg]
-
       new FunctorK[Alg] {
-        def mapK[F[_], G[_]](af: Alg[F])(fk: F ~> G): Alg[G] = ??? // ${Block(List(clsDef), newCls).asExprOf[Alg[G]]}
+        def mapK[F[_], G[_]](af: Alg[F])(fk: F ~> G): Alg[G] =
+          ${ capture('af, 'fk) }
       }
     }
-
 
     println("***********")
     println(res.show)
@@ -151,7 +89,66 @@ object DeriveMacros {
     // Block(List(clsDef), newCls).asExprOf[Alg]
   }
 
-  inline def functorK2Invoke[T]: String = ${functorK2[T]}
+  @experimental
+  def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](e1: Expr[Alg[F]], e2: Expr[F ~> G])(using Quotes) =
+    import quotes.reflect.*
+    val methods = definedMethodsInType[Alg]
+    println("---------")
+    println(methods)
+    // println(TypeRepr.of[Alg].typeSymbol.fullName)
+    // println(TypeRepr.of[Alg].typeSymbol.declarations)
+    // println(TypeRepr.of[Alg].typeSymbol.methodMembers)
+    println("---------")
+
+    val className = "_Anon"
+    val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]])
+
+    def decls(cls: Symbol): List[Symbol] = methods.map { method =>
+      method.tree.changeOwner(cls) match {
+        case DefDef(name, clauses, typedTree, _) =>
+          val tpeRepr = TypeRepr.of(using typedTree.tpe.asType)
+          val names   = clauses.flatMap(_.params.collect { case v: ValDef => v.name })
+          val tpes    = clauses.flatMap(_.params.collect { case v: ValDef => v.tpt.tpe })
+
+          // nullary methods
+          val methodType = if (clauses.isEmpty) ByNameType(tpeRepr) else MethodType(names)(_ => tpes, _ => tpeRepr)
+          Symbol.newMethod(
+            cls,
+            name,
+            methodType,
+            flags = Flags.EmptyFlags /*TODO: method.flags */,
+            privateWithin = method.privateWithin.fold(Symbol.noSymbol)(_.typeSymbol)
+          )
+        case _ =>
+          report.errorAndAbort(s"Cannot detect type of method: ${method.name}")
+      }
+    }
+
+    val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
+
+    // val ress: Term = '{"fk"}.asTerm
+    val body = cls.declaredMethods.map { method =>
+      DefDef(
+        method,
+        argss =>
+          val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+          val x = Some(
+            Apply(e2.asTerm, List(apply)) // <- тут поменять над - на вызов `e2.apply()` видимо
+          )
+          println(x)
+          x
+      )
+    }
+    val clsDef = ClassDef(cls, parents, body = body)
+    val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
+    val ee     = Block(List(clsDef), newCls).asExpr
+
+    println("============")
+    println(ee.show)
+    println("============")
+    ee.asExprOf[Alg[G]]
+
+  inline def functorK2Invoke[T]: String = ${ functorK2[T] }
 
   def functorK2[Alg](using t: Type[Alg])(using Quotes) = {
     import quotes.reflect.*
@@ -167,4 +164,3 @@ object DeriveMacros {
     //   case _ => "Fail"
   }
 }
-

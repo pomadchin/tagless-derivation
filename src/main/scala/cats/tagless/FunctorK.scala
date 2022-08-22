@@ -3,6 +3,7 @@ package cats.tagless
 import cats.~>
 
 import scala.annotation.implicitNotFound
+import cats.tagless.macros.DeriveMacros
 
 /**
  * Sort of a higher kinded Functor, but, well, it's complicated. See Daniel Spiewak's comment here
@@ -19,7 +20,7 @@ object Test {
     def foo(): F[Unit]
   }
 
-  val fkTest = new FunctorK[UserService] { 
+  val fkTest = new FunctorK[UserService] {
     def mapK[F[_], G[_]](af: UserService[F])(fk: F ~> G): UserService[G] = new UserService[G] {
       def foo(): G[Unit] = fk(af.foo())
     }
