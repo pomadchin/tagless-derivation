@@ -107,8 +107,15 @@ object DeriveMacros {
       method.tree.changeOwner(cls) match {
         case DefDef(name, clauses, typedTree, _) =>
           val tpeRepr = TypeRepr.of(using typedTree.tpe.asType)
+
           val names   = clauses.flatMap(_.params.collect { case v: ValDef => v.name })
           val tpes    = clauses.flatMap(_.params.collect { case v: ValDef => v.tpt.tpe })
+
+          println("decls:")
+          
+          println(s"names: $names")
+          println(s"tpes: $tpes")
+          println("decls//")
 
           // nullary methods
           val methodType = if (clauses.isEmpty) ByNameType(tpeRepr) else MethodType(names)(_ => tpes, _ => tpeRepr)
@@ -131,12 +138,76 @@ object DeriveMacros {
       DefDef(
         method,
         argss =>
-          val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
-          val x = Some(
-            Apply(e2.asTerm, List(apply)) // <- тут поменять над - на вызов `e2.apply()` видимо
-          )
+          // lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+
+          println(s"method.nn: ${method.tree.show(using Printer.TreeAnsiCode)}")
+
+
+          val xx = method.tree match 
+            case dd @ DefDef(name, clauses, typedTree, _) =>
+              val tpes    = clauses.flatMap(_.params.collect { case v: ValDef => v.tpt.tpe })
+              val tpeRepr = TypeRepr.of(using typedTree.tpe.asType)
+
+
+              println(s"typedTree.tpe: ${typedTree.tpe}")
+              println(s"dd: ${dd}")
+              println(s"name: ${name}")
+              println(s"tpeRepr.asType: ${tpeRepr.asType}")
+
+              //vtypedTree.tpe
+              typedTree.tpe.simplified match
+                case at @ AppliedType(_, inner :: _) =>
+
+                  println("------")
+                  println(s"inner: $inner")
+                  println(s"inner.typeSymbol: ${inner.typeSymbol.typeRef}")
+                  println("------")
+
+                
+
+                  lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+
+                
+                  val x = Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))// .appliedTo(apply))
+                  println("!!!!!!!!!")
+                  println(x)
+                  println("!!!!!!!!!")
+
+                  x
+                case _ => ???
+
+            case _ =>
+              report.errorAndAbort(s"Cannot detect type of method: ${method.name}")
+
+          
+          println(s"method.signature: ${method.signature}")
+          println(s"method.toString: ${method.name}")
+          println(s"method.termRef.typeSymbol: ${method.termRef.typeSymbol}")
+          println(s"argss.headOption.getOrElse(Nil).collect { case t: Term => t }: ${argss.headOption.getOrElse(Nil).collect { case t: Term => t }}")
+          lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+          // val applye2 = Apply(Select(e2.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+
+
+          // val e2appl = Some(e2.asTerm.appliedTo(apply))
+
+          // println("&&&&&&")
+          // println(e2appl)
+          // println("&&&&&&")
+
+          // // val x = Some(
+          // //   Apply(e2.asTerm, List(apply)) // <- тут поменять над - на вызов `e2.apply()` видимо
+          // // )
+
+          // argss
+
+          // val x = Some(Select.overloaded(e2.asTerm, "apply", List(TypeRepr.of[Int]), List(apply)))// .appliedTo(apply))
+          val x = Some(Select.overloaded(e2.asTerm, "apply", List(TypeRepr.of[Int]), List(apply)))// .appliedTo(apply))
           println(x)
-          x
+          // x
+          // println(apply)
+          // None
+          // x
+          xx
       )
     }
     val clsDef = ClassDef(cls, parents, body = body)

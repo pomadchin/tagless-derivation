@@ -11,7 +11,8 @@ scalacOptions ++= Seq(
   "-language:postfixOps",
   "-language:existentials",
   "-feature",
-  "-source:future"
+  "-source:future",
+  "-explain"
 )
 
 scalacOptions ++= {

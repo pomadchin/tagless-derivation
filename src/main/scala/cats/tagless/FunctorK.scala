@@ -16,13 +16,17 @@ trait FunctorK[Alg[_[_]]] extends InvariantK[Alg] {
 }
 
 object Test {
+
+  // var kk: FunctionK[Option] = ???
+  // k.apply
+
   trait UserService[F[_]] {
     def foo(): F[Unit]
   }
 
   val fkTest = new FunctorK[UserService] {
     def mapK[F[_], G[_]](af: UserService[F])(fk: F ~> G): UserService[G] = new UserService[G] {
-      def foo(): G[Unit] = fk(af.foo())
+      def foo(): G[Unit] = fk.apply[Unit](af.foo())
     }
   }
 }

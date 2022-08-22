@@ -1,7 +1,7 @@
 package cats.tagless.macros
 
 trait UserService[F[_]] {
-  def id: F[Int]
+  def id(): F[Int]
 }
 
 trait SimpleTrait {
