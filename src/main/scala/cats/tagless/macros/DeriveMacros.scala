@@ -131,7 +131,7 @@ object DeriveMacros {
                 if argss.isEmpty then Select(e1.asTerm, method)
                 else Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
               Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))
-            case _ => ???
+            case _ => None
       )
     }
     val clsDef = ClassDef(cls, parents, body = body)
