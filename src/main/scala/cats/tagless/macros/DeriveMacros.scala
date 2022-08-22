@@ -120,20 +120,15 @@ object DeriveMacros {
     val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
 
     // val ress: Term = '{"fk"}.asTerm
-    val body = cls.declaredMethods.map { method =>
+    val body = cls.declaredMethods.map(method => (method, method.tree)).collect { case (method, DefDef(_, _, typedTree, _)) =>
       DefDef(
         method,
         argss =>
-          method.tree match 
-            case DefDef(name, clauses, typedTree, _) =>
-              typedTree.tpe.simplified match
-                case at @ AppliedType(_, inner :: _) =>
-                  lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
-                  Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))
-                case _ => ???
-
-            case _ =>
-              report.errorAndAbort(s"Cannot detect type of method: ${method.name}")
+          typedTree.tpe.simplified match
+            case at @ AppliedType(_, inner :: _) =>
+              lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+              Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))
+            case _ => ???
       )
     }
     val clsDef = ClassDef(cls, parents, body = body)
