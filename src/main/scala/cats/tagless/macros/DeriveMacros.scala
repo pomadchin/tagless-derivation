@@ -126,7 +126,10 @@ object DeriveMacros {
         argss =>
           typedTree.tpe.simplified match
             case at @ AppliedType(_, inner :: _) =>
-              lazy val apply = Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+              val apply = 
+                // method with no parentheses
+                if argss.isEmpty then Select(e1.asTerm, method)
+                else Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
               Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))
             case _ => ???
       )

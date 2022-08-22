@@ -2,6 +2,8 @@ package cats.tagless.macros
 
 trait UserService[F[_]] {
   def id(): F[Int]
+  def list(id: Int): F[List[Int]]
+  def paranthesless: F[Int]
 }
 
 trait SimpleTrait {
