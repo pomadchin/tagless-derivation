@@ -28,8 +28,7 @@ object macroFunctorK {
     res
   }
 
-  @experimental
-  def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](e1: Expr[Alg[F]], e2: Expr[F ~> G])(using Quotes): Expr[Alg[G]] =
+  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], efk: Expr[F ~> G])(using Quotes): Expr[Alg[G]] =
     import quotes.reflect.*
     val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]])
@@ -41,12 +40,9 @@ object macroFunctorK {
         method,
         argss =>
           typedTree.tpe.simplified.asMatchable match
-            case at @ AppliedType(_, inner :: _) =>
-              val apply =
-                // method with no parentheses
-                if argss.isEmpty then Select(e1.asTerm, method)
-                else Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
-              Some(Select.overloaded(e2.asTerm, "apply", List(inner), List(apply)))
+            case AppliedType(_, inner) =>
+              val apply = methodApply(eaf)(method, argss)
+              Some(Select.overloaded(efk.asTerm, "apply", inner, List(apply)))
             case _ => report.errorAndAbort("FunctorK can be derived for simple algebras only.")
       )
     }

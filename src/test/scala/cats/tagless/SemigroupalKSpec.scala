@@ -23,5 +23,6 @@ class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
       combinedInstance.id() `shouldBe` Tuple2K(instance.id(), optionalInstance.id())
       combinedInstance.list(0) `shouldBe` Tuple2K(instance.list(0), optionalInstance.list(0))
       combinedInstance.paranthesless `shouldBe` Tuple2K(instance.paranthesless, optionalInstance.paranthesless)
+      combinedInstance.tuples `shouldBe` Tuple2K(instance.tuples, optionalInstance.tuples)
     }
   }
