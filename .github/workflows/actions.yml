@@ -1,0 +1,30 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    name: Build and Test
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != 'pomadchin/tagless-deriving'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        java: [17]
+        distribution: [temurin]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6
+      - uses: actions/setup-java@v3
+        with:
+          distribution: ${{ matrix.distribution }}
+          java-version: ${{ matrix.java }}
+
+      - name: Check formatting
+        run: sbt scalafmtCheckAll
+
+      - name: Build project
+        run: sbt +test
+  

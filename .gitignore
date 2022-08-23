@@ -47,18 +47,3 @@ metals.sbt
 # SBT
 
 .bsp
-
-# Test data files #
-
-java/data
-
-# Compiled libs #
-
-java/*.dylib
-java/*.so
-java/*dll
-
-# Other
-
-application.conf
-*.log

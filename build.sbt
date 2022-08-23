@@ -11,13 +11,15 @@ scalacOptions ++= Seq(
   "-language:postfixOps",
   "-language:existentials",
   "-feature",
-  "-source:future"
+  "-source:future",
+  "-explain"
 )
 
 scalacOptions ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((3, _)) => Seq("-Ykind-projector:underscores")
+    case Some((3, _))       => Seq("-Ykind-projector:underscores")
     case Some((2, 12 | 13)) => Seq("-Xsource:3", "-P:kind-projector:underscore-placeholders")
+    case _                  => Nil
   }
 }
 
