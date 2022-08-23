@@ -8,9 +8,9 @@ import scala.annotation.experimental
 import compiletime.asMatchable
 
 object macroFunctorK:
-  private val errorFor = "FunctorK"
-
   import Utils.*
+
+  private val errorFor = "FunctorK"
 
   inline def derive[Alg[_[_]]] = ${ functorK[Alg] }
 
