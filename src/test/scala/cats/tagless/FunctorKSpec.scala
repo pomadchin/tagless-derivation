@@ -6,6 +6,8 @@ import org.scalatest.matchers.should.Matchers
 import cats.tagless.macros.Derive
 import cats.arrow.FunctionK
 
+import scala.compiletime.testing.*
+
 class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
 
   describe("FunctorK Spec") {
@@ -25,8 +27,7 @@ class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
       optionalInstance.tuple `shouldBe` Some(instance.tuple)
     }
 
-    // commented out because it fails to compile, q: how to cover it with tests?
-    // it("DeriveMacro should not derive instance for a not simple algebra") {
-    //   Derive.functorK[NotSimpleService]
-    // }
+    it("DeriveMacro should not derive instance for a not simple algebra") {
+      typeCheckErrors("Derive.functorK[NotSimpleService]").map(_.message) `shouldBe` List("FunctorK can be derived for simple algebras only.")
+    }
   }
