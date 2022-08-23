@@ -7,6 +7,8 @@ import cats.tagless.macros.Derive
 import cats.arrow.FunctionK
 import cats.data.Tuple2K
 
+import scala.compiletime.testing.*
+
 class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
   describe("SemigorupalK Spec") {
     it("DeriveMacro should derive instance for a simple algebra") {
@@ -26,8 +28,7 @@ class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
       combinedInstance.tuple `shouldBe` Tuple2K(instance.tuple, optionalInstance.tuple)
     }
 
-    // commented out because it fails to compile, q: how to cover it with tests?
-    // it("DeriveMacro should not derive instance for a not simple algebra") {
-    //   Derive.semigroupalK[NotSimpleService]
-    // }
+    it("DeriveMacro should not derive instance for a not simple algebra") {
+      typeCheckErrors("Derive.semigroupalK[NotSimpleService]").map(_.message) `shouldBe` List("SemigroupalK can be derived for simple algebras only.")
+    }
   }

@@ -9,6 +9,8 @@ import cats.data.Tuple2K
 import scala.util.Try
 import cats.~>
 
+import scala.compiletime.testing.*
+
 class ApplyKSpec extends AnyFunSpec with Matchers with Fixtures:
   describe("ApplyK Spec") {
     it("DeriveMacro should derive instance for a simple algebra") {
@@ -30,8 +32,7 @@ class ApplyKSpec extends AnyFunSpec with Matchers with Fixtures:
       tryInstance.tuple `shouldBe` Try(instance.tuple)
     }
 
-    // commented out because it fails to compile, q: how to cover it with tests?
-    // it("DeriveMacro should not derive instance for a not simple algebra") {
-    //   Derive.applyK[NotSimpleService]
-    // }
+    it("DeriveMacro should not derive instance for a not simple algebra") {
+      typeCheckErrors("Derive.applyK[NotSimpleService]").map(_.message) `shouldBe` List("ApplyK can be derived for simple algebras only.")
+    }
   }
