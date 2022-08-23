@@ -8,20 +8,22 @@ import cats.data.Tuple2K
 import scala.annotation.experimental
 import compiletime.asMatchable
 
-object macroApplyK {
+object macroApplyK:
   import Utils.*
+
+  private val errorFor = "ApplyK"
 
   inline def derive[Alg[_[_]]] = ${ applyK[Alg] }
 
-  @experimental def applyK[Alg[_[_]]: Type](using Quotes): Expr[ApplyK[Alg]] = {
+  @experimental def applyK[Alg[_[_]]: Type](using Quotes): Expr[ApplyK[Alg]] =
     import quotes.reflect.*
 
     val res = '{
       new ApplyK[Alg] {
         def mapK[F[_], G[_]](af: Alg[F])(fk: F ~> G): Alg[G] =
-          ${ macroFunctorK.capture('af, 'fk) }
+          ${ macroFunctorK.capture('af, 'fk)(errorFor) }
         def productK[F[_], G[_]](af: Alg[F], ag: Alg[G]): Alg[Tuple2K[F, G, *]] =
-          ${ macroSemigroupalK.capture('af, 'ag) }
+          ${ macroSemigroupalK.capture('af, 'ag)(errorFor) }
       }
     }
 
@@ -29,5 +31,3 @@ object macroApplyK {
     // println(res.show)
     // println("-----------")
     res
-  }
-}

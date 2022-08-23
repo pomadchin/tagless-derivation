@@ -14,8 +14,8 @@ trait Fixtures:
     def id(): Id[Int]                = 42
     def list(id: Int): Id[List[Int]] = List(id)
     def paranthesless: Id[Int]       = 23
-    def tuple: Id[(Int, Long)]      = (42, 23)
+    def tuple: Id[(Int, Long)]       = (42, 23)
 
-  trait NoSimpleService[F[_]]:
+  trait NotSimpleService[F[_]]:
     def id(): Int
     def list(id: Int): F[List[Int]]

@@ -25,13 +25,8 @@ class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
       optionalInstance.tuple `shouldBe` Some(instance.tuple)
     }
 
-    // commented out because it fails
+    // commented out because it fails to compile, q: how to cover it with tests?
     // it("DeriveMacro should not derive instance for a not simple algebra") {
-    //   trait NoSimpleService[F[_]] {
-    //     def id(): Int
-    //     def list(id: Int): F[List[Int]]
-    //   }
-
-    //   Derive.functorK[NoSimpleService]
+    //   Derive.functorK[NotSimpleService]
     // }
   }

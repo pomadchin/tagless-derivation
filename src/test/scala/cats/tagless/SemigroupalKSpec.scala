@@ -25,4 +25,9 @@ class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
       combinedInstance.paranthesless `shouldBe` Tuple2K(instance.paranthesless, optionalInstance.paranthesless)
       combinedInstance.tuple `shouldBe` Tuple2K(instance.tuple, optionalInstance.tuple)
     }
+
+    // commented out because it fails to compile, q: how to cover it with tests?
+    // it("DeriveMacro should not derive instance for a not simple algebra") {
+    //   Derive.semigroupalK[NotSimpleService]
+    // }
   }
