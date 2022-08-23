@@ -3,7 +3,6 @@ package cats.tagless
 import cats.~>
 
 import scala.annotation.implicitNotFound
-import cats.tagless.macros.DeriveMacros
 
 /**
  * Sort of a higher kinded Functor, but, well, it's complicated. See Daniel Spiewak's comment here
