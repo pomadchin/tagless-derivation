@@ -11,8 +11,6 @@ import compiletime.asMatchable
 object macroApplyK:
   import Utils.*
 
-  private val errorFor = "ApplyK"
-
   inline def derive[Alg[_[_]]] = ${ applyK[Alg] }
 
   @experimental def applyK[Alg[_[_]]: Type](using Quotes): Expr[ApplyK[Alg]] =
@@ -21,9 +19,9 @@ object macroApplyK:
     val res = '{
       new ApplyK[Alg] {
         def mapK[F[_], G[_]](af: Alg[F])(fk: F ~> G): Alg[G] =
-          ${ macroFunctorK.capture('af, 'fk)(errorFor) }
+          ${ macroFunctorK.capture('af, 'fk) }
         def productK[F[_], G[_]](af: Alg[F], ag: Alg[G]): Alg[Tuple2K[F, G, *]] =
-          ${ macroSemigroupalK.capture('af, 'ag)(errorFor) }
+          ${ macroSemigroupalK.capture('af, 'ag) }
       }
     }
 

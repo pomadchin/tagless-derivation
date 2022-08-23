@@ -9,8 +9,6 @@ import scala.annotation.experimental
 import compiletime.asMatchable
 
 object macroSemigroupalK:
-  private val errorFor = "SemigroupalK"
-
   import Utils.*
 
   inline def derive[Alg[_[_]]] = ${ semigroupalK[Alg] }
@@ -21,7 +19,7 @@ object macroSemigroupalK:
     val res = '{
       new SemigroupalK[Alg] {
         def productK[F[_], G[_]](af: Alg[F], ag: Alg[G]): Alg[Tuple2K[F, G, *]] =
-          ${ capture('af, 'ag)(errorFor) }
+          ${ capture('af, 'ag) }
       }
     }
 
@@ -30,7 +28,7 @@ object macroSemigroupalK:
     // println("-----------")
     res
 
-  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](afe: Expr[Alg[F]], age: Expr[Alg[G]])(errFor: String)(using Quotes): Expr[Alg[Tuple2K[F, G, *]]] =
+  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](afe: Expr[Alg[F]], age: Expr[Alg[G]])(using Quotes): Expr[Alg[Tuple2K[F, G, *]]] =
     import quotes.reflect.*
     val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[Tuple2K[F, G, *]]])
@@ -53,7 +51,7 @@ object macroSemigroupalK:
                   List(aafe, aage)
                 )
               )
-            case _ => report.errorAndAbort(s"$errFor can be derived for simple algebras only.")
+            case _ => report.errorAndAbort("Derive works with simple algebras only.")
       )
     }
 
