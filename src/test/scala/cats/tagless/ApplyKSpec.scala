@@ -23,12 +23,13 @@ class ApplyKSpec extends AnyFunSpec with Matchers with Fixtures:
       val optionalInstance = functorK.mapK(instance)(FunctionK.lift([X] => (id: Id[X]) => Option(id)))
       val combinedInstance = semigroupalK.productK(instance, optionalInstance)
 
-      val fk: Tuple2K[Id, Option, *] ~> Try = FunctionK.lift([X] => (tup: Tuple2K[Id, Option, X]) => Try(tup.first))
+      val fk: Tuple2K[Id, Option, *] ~> Try = FunctionK.lift([X] => (tup: Tuple2K[Id, Option, X]) => Try(tup.second.map(_ => tup.first).get))
 
       val akInstance = applyK.map2K[Id, Option, Try](instance, optionalInstance)(fk)
 
       akInstance.id() `shouldBe` Try(instance.id())
       akInstance.list(0) `shouldBe` Try(instance.list(0))
       akInstance.paranthesless `shouldBe` Try(instance.paranthesless)
+      akInstance.tuples `shouldBe` Try(instance.tuples)
     }
   }

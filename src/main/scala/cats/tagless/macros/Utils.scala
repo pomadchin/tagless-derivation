@@ -3,6 +3,13 @@ package cats.tagless.macros
 import quoted.*
 
 object Utils:
+  def methodApply[Alg[_[_]]: Type, F[_]: Type](e: Expr[Alg[F]])(using Quotes): (quotes.reflect.Symbol, List[List[quotes.reflect.Tree]]) => quotes.reflect.Term =
+    (method, argss) =>
+      import quotes.reflect.*
+      // method with no parentheses
+      if argss.isEmpty then Select(e.asTerm, method)
+      else Apply(Select(e.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
+
   // https://github.com/lampepfl/dotty/issues/11685
   def definedMethodsInType[Alg[_[_]]: Type](using Quotes): List[quotes.reflect.Symbol] =
     import quotes.reflect.*

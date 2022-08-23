@@ -22,6 +22,7 @@ class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
       optionalInstance.id() `shouldBe` Some(instance.id())
       optionalInstance.list(0) `shouldBe` Some(instance.list(0))
       optionalInstance.paranthesless `shouldBe` Some(instance.paranthesless)
+      optionalInstance.tuples `shouldBe` Some(instance.tuples)
     }
 
     // commented out because it fails

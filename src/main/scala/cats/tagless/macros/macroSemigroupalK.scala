@@ -29,8 +29,7 @@ object macroSemigroupalK {
     res
   }
 
-  @experimental
-  def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](e1: Expr[Alg[F]], e2: Expr[Alg[G]])(using Quotes): Expr[Alg[Tuple2K[F, G, *]]] =
+  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](afe: Expr[Alg[F]], age: Expr[Alg[G]])(using Quotes): Expr[Alg[Tuple2K[F, G, *]]] =
     import quotes.reflect.*
     val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[Tuple2K[F, G, *]]])
@@ -42,27 +41,15 @@ object macroSemigroupalK {
         method,
         argss =>
           typedTree.tpe.simplified.asMatchable match
-            case at @ AppliedType(tr, inner) =>
-              val ae1 =
-                // method with no parentheses
-                if argss.isEmpty then Select(e1.asTerm, method)
-                else Apply(Select(e1.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
-
-              val ae2 =
-                // method with no parentheses
-                if argss.isEmpty then Select(e2.asTerm, method)
-                else Apply(Select(e2.asTerm, method), argss.headOption.getOrElse(Nil).collect { case t: Term => t })
-
-              // println("---------")
-              // println(inner)
-              // println("---------")
-
-              val innerTree: List[TypeTree] = inner.map(tr => TypeTree.of(using tr.asType))
+            case AppliedType(tr, inner) =>
+              val aafe   = methodApply(afe)(method, argss)
+              val aage   = methodApply(age)(method, argss)
+              val mttree = inner.map(tr => TypeTree.of(using tr.asType))
 
               Some(
                 Apply(
-                  TypeApply(Ref(Symbol.requiredMethod("cats.data.Tuple2K.apply")), innerTree),
-                  List(ae1, ae2)
+                  TypeApply(Ref(Symbol.requiredMethod("cats.data.Tuple2K.apply")), mttree),
+                  List(aafe, aage)
                 )
               )
             case _ => report.errorAndAbort("SemigroupalK can be derived for simple algebras only.")
