@@ -5,16 +5,9 @@ import quoted.*
 import cats.~>
 
 import scala.annotation.experimental
+import compiletime.asMatchable
 
 object DeriveMacros {
-  // trait Foo
-
-  // def applyK[Alg[_[_]]](using Quotes) = '{
-  //   class myClass() extends Object with Foo {
-  //     def foo(): Unit = println("Calling foo")
-  //   }
-  //   new myClass(): Foo
-  // }
 
   def definedMethodsInType[Alg[_[_]]: Type](using Quotes): List[quotes.reflect.Symbol] = {
     import quotes.reflect.*
@@ -37,36 +30,9 @@ object DeriveMacros {
     } yield member
   }
 
-  inline def functorInvoke[T] = ${ functor[T] }
+  inline def functorK[Alg[_[_]]] = ${ functorKGen[Alg] }
 
-  def functor[Alg](using t: Type[Alg])(using Quotes) = {
-    import quotes.reflect.*
-
-    val tree = TypeTree.of[Alg]
-
-    println("~~~~~~")
-    println(tree)
-    println(tree.tpe)
-    println("~~~~~~")
-    println(tree.symbol.methodMembers)
-    println(tree.symbol.methodMember("id"))
-    println(tree.symbol.declarations)
-    println(tree.symbol.declaredFields)
-    println("~~~~~~")
-
-    // val decls = definedMethodsInType[Alg]
-    // println(decls)
-    println("---------")
-    println(TypeRepr.of[Alg].typeSymbol.fullName)
-    println("---------")
-
-    val s = t.toString()
-    Expr(s)
-  }
-
-  inline def functorKInvoke[Alg[_[_]]] = ${ functorK[Alg] }
-
-  @experimental def functorK[Alg[_[_]]: Type](using Quotes): Expr[FunctorK[Alg]] = {
+  @experimental def functorKGen[Alg[_[_]]: Type](using Quotes): Expr[FunctorK[Alg]] = {
     import quotes.reflect.*
 
     val res = '{
@@ -76,24 +42,17 @@ object DeriveMacros {
       }
     }
 
-    println("***********")
-    println(res.show)
-    println("***********")
-
+    // println("-----------")
+    // println(res.show)
+    // println("-----------")
     res
-
-    // val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
-    // val body = cls.declaredMethods.map { method => DefDef(method, argss => Some('{${r}()}.asTerm)) }
-    // val clsDef = ClassDef(cls, parents, body = body)
-    // val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[T])
-    // Block(List(clsDef), newCls).asExprOf[Alg]
   }
 
   @experimental
   def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](e1: Expr[Alg[F]], e2: Expr[F ~> G])(using Quotes) =
     import quotes.reflect.*
     val methods = definedMethodsInType[Alg]
-    val className = "_Anon"
+    val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]])
 
     def decls(cls: Symbol): List[Symbol] = methods.map { method =>
@@ -119,12 +78,11 @@ object DeriveMacros {
 
     val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
 
-    // val ress: Term = '{"fk"}.asTerm
     val body = cls.declaredMethods.map(method => (method, method.tree)).collect { case (method, DefDef(_, _, typedTree, _)) =>
       DefDef(
         method,
         argss =>
-          typedTree.tpe.simplified match
+          typedTree.tpe.simplified.asMatchable match
             case at @ AppliedType(_, inner :: _) =>
               val apply = 
                 // method with no parentheses
@@ -134,28 +92,13 @@ object DeriveMacros {
             case _ => None
       )
     }
+
     val clsDef = ClassDef(cls, parents, body = body)
     val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
-    val ee     = Block(List(clsDef), newCls).asExpr
+    val expr     = Block(List(clsDef), newCls).asExpr
 
-    println("============")
-    println(ee.show)
-    println("============")
-    ee.asExprOf[Alg[G]]
-
-  inline def functorK2Invoke[T]: String = ${ functorK2[T] }
-
-  def functorK2[Alg](using t: Type[Alg])(using Quotes) = {
-    import quotes.reflect.*
-    println("---------")
-    println(TypeRepr.of[Alg].typeSymbol.fullName)
-    println("---------")
-    val s = t.toString()
-    Expr(s)
-    // val s = t match
-    //   case '[Foo[?]] => "FooSuccess" //compiler error, but other two successfully match
-    //   case '[Bar[?]] => "BarSuccess"
-    //   case '[Baz[?]] => "BazSuccess"
-    //   case _ => "Fail"
-  }
+    // println("============")
+    // println(expr.show)
+    // println("============")
+    expr.asExprOf[Alg[G]]
 }
