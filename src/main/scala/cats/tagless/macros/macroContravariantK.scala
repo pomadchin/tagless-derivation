@@ -86,6 +86,7 @@ object macroContravariantK:
               println(argss)
               println("&&&&&&&&&&&&&")
 
+              // todo this should work with an arbitrary curried function arguments
               val List(argfst, argsnd) = argss.flatten.collect { case t: Term => t }
 
               Some(
