@@ -44,23 +44,22 @@ object Utils:
           val names   = clauses.map(_.params.collect { case v: ValDef => v.name })
           val tpes    = clauses.map(_.params.collect { case v: ValDef => v.tpt.tpe })
 
-          val methodType = 
+          val methodType =
             // nullary methods
-            if clauses.isEmpty then ByNameType(tpeRepr) 
-            else 
-              // in case of more than a single nested list
-              // it is a curried method
-              // we want to foldRight it recursively nesting result types
-              // and the most right should point to the result type
-              // see https://github.com/lampepfl/dotty/blob/3ad97df9b5e7ff6adf9952f0efc7f2df813ba395/compiler/src/dotty/tools/dotc/semanticdb/TypeOps.scala#L90-L94
+            if clauses.isEmpty || names.isEmpty || names.length != tpes.length then ByNameType(tpeRepr)
+            else
+              // In case of more than a single nested list it is a curried method.
+              // The idea is to foldRight it recursively nesting the result types.
+              // The most right should point to the actual method result type, and every other points to the previous,
+              // for more details, see: https://github.com/lampepfl/dotty/blob/3ad97df9b5e7ff6adf9952f0efc7f2df813ba395/compiler/src/dotty/tools/dotc/semanticdb/TypeOps.scala#L90-L94
               names
-              .zip(tpes)
-              .foldRight(Option.empty[MethodType]) { case ((nms, tps), acc) =>
-                acc match
-                  case None => Some(MethodType(nms)(_ => tps, _ => tpeRepr))
-                  case Some(resType) => Some(MethodType(nms)(_ => tps, _ => resType))
-              }
-              .get
+                .zip(tpes)
+                .foldRight(Option.empty[MethodType]) { case ((nms, tps), acc) =>
+                  acc match
+                    case None          => Some(MethodType(nms)(_ => tps, _ => tpeRepr))
+                    case Some(resType) => Some(MethodType(nms)(_ => tps, _ => resType))
+                }
+                .get
 
           Symbol.newMethod(
             cls,
