@@ -108,7 +108,7 @@ object macroContravariantK:
                 )
               )
 
-              None
+              // None
 
             case at: AppliedType =>
               report.errorAndAbort("Derive works with simple algebras only.")
