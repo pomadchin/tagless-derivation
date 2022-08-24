@@ -13,8 +13,8 @@ import scala.compiletime.testing.*
 
 class ContravariantKSpec extends AnyFunSpec with Matchers:
   trait SimpleService[F[_]]:
-    // def id(id: F[Int]): Int
-    // def ids(id1: F[Int], id2: F[Int]): Int
+    def id(id: F[Int]): Int
+    def ids(id1: F[Int], id2: F[Int]): Int
     def foldSpecialized(init: String)(f: (Int, String) => Int): cats.data.Cokleisli[F, String, Int]
 
   describe("ContravariantK Spec") {
