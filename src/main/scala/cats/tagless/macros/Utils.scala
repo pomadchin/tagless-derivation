@@ -37,6 +37,7 @@ object Utils:
     import quotes.reflect.*
     val methods = definedMethodsInType[Alg]
 
+    // TODO: support curried methods?
     def decls(cls: Symbol): List[Symbol] = methods.map { method =>
       method.tree.changeOwner(cls) match
         case DefDef(name, clauses, typedTree, _) =>
