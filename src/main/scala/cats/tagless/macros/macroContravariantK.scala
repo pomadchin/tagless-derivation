@@ -42,8 +42,8 @@ object macroContravariantK:
           typedTree.tpe.simplified.asMatchable match
             // Cokleisli case is handled here
             // head of inner is F :: G :: rest
-            case AppliedType(tr, inner @ _ :: tail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
-              val mttree = tail.map(tr => TypeTree.of(using tr.asType))
+            case AppliedType(tr, _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
+              val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
 
               val methodArgsApply =
                 argss.flatten
@@ -58,7 +58,7 @@ object macroContravariantK:
               Some(
                 Apply(
                   Select.overloaded(
-                    TypeApply(Ref(Symbol.requiredMethod("cats.tagless.InvariantK.catsTaglessContravariantKForCokleisli")), mttree),
+                    TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ContravariantK.catsTaglessContravariantKForCokleisli")), mttree),
                     "contramapK",
                     List(TypeRepr.of[F], TypeRepr.of[G]),
                     methodArgsApply

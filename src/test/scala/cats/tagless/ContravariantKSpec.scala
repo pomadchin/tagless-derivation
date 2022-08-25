@@ -16,17 +16,13 @@ class ContravariantKSpec extends AnyFunSpec with Matchers:
 
   trait SimpleService[F[_]]:
     def id(id: F[Int]): Int
-    // def ids(id1: F[Int], id2: F[Int]): Int
-    // def foldSpecialized(init: String)(f: (Int, String) => Int): Cokleisli[F, String, Int]
+    def ids(id1: F[Int], id2: F[Int]): Int
+    def foldSpecialized(init: String)(f: (Int, String) => Int): Cokleisli[F, String, Int]
 
   describe("ContravariantK Spec") {
     it("DeriveMacro should derive instance for a simple algebra") {
       def contravariantK = Derive.contravariantK[SimpleService]
       contravariantK `shouldBe` a[ContravariantK[SimpleService]]
-    }
-
-    it("DeriveMacro should derive instance for a simple algebra #2") {
-      def contravariantK = Derive.contravariantK[SimpleService]
     }
 
     it("DeriveMacro should not derive instance for a not simple algebra") {
