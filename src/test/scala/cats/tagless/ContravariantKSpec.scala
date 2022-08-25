@@ -25,6 +25,10 @@ class ContravariantKSpec extends AnyFunSpec with Matchers:
       contravariantK `shouldBe` a[ContravariantK[SimpleService]]
     }
 
+    it("DeriveMacro should derive instance for a simple algebra #2") {
+      def contravariantK = Derive.contravariantK[SimpleService]
+    }
+
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.contravariantK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
     }

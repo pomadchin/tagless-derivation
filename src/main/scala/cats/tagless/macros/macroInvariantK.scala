@@ -32,7 +32,7 @@ object macroInvariantK:
     import quotes.reflect.*
     val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]])
-    val decls     = definedMethodsInTypeWithOwner[Alg]
+    val decls     = memberSymbolsAsSeen[Alg, G]
 
     val cls = Symbol.newClass(Symbol.spliceOwner, className, parents = parents.map(_.tpe), decls, selfType = None)
     val body = cls.declaredMethods.map(method => (method, method.tree)).collect { case (method, DefDef(_, _, typedTree, _)) =>
