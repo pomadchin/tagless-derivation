@@ -23,9 +23,9 @@ object macroContravariantK:
       }
     }
 
-    println("-----------")
-    println(res.show)
-    println("-----------")
+    // println("-----------")
+    // println(res.show)
+    // println("-----------")
     res
 
   @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], efk: Expr[G ~> F])(using Quotes): Expr[Alg[G]] =
@@ -78,13 +78,13 @@ object macroContravariantK:
                 Apply(
                   Select(eaf.asTerm, method),
                   argss.flatMap {
-                    _.collect { case t: Term =>
+                    _.collect { case term: Term =>
                       Apply(
                         Select.overloaded(
                           TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ApplyK.catsTaglessApplyKForIdK")), mttree),
                           "mapK",
                           List(TypeRepr.of[G], TypeRepr.of[F]),
-                          List(t)
+                          List(term)
                         ),
                         List(efk.asTerm)
                       )
@@ -99,7 +99,7 @@ object macroContravariantK:
     val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
     val expr   = Block(List(clsDef), newCls).asExpr
 
-    println("============")
-    println(expr.show)
-    println("============")
+    // println("============")
+    // println(expr.show)
+    // println("============")
     expr.asExprOf[Alg[G]]
