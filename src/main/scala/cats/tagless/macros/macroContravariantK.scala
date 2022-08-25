@@ -18,8 +18,8 @@ object macroContravariantK:
 
     val res = '{
       new ContravariantK[Alg] {
-        def contramapK[F[_], G[_]](af: Alg[F])(gk: G ~> F): Alg[G] =
-          ${ capture('af, 'gk) }
+        def contramapK[F[_], G[_]](af: Alg[F])(fk: G ~> F): Alg[G] =
+          ${ capture('af, 'fk) }
       }
     }
 
@@ -28,29 +28,7 @@ object macroContravariantK:
     println("-----------")
     res
 
-//   {
-//   final class $anon extends AnyRef with cats.tagless.ContravariantK[[F[_]]com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[F]] {
-//     def <init>(): <$anon: cats.tagless.ContravariantK[[F[_]]com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[F]]> = {
-//       $anon.super.<init>();
-//       ()
-//     };
-//     override def contramapK[F[_] >: [_]Nothing <: [_]Any, G[_] >: [_]Nothing <: [_]Any](af: com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[F])(fk: G ~> F): com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[G] = {
-//       final class $anon extends AnyRef with com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[G] {
-//         def <init>(): <$anon: com.disneystreaming.activation.iap.lambda.kinesis.package.UserSerivice[G]> = {
-//           $anon.super.<init>();
-//           ()
-//         };
-//         override def foldSpecialized(init: String)(f: (Int, String) => Int): cats.data.Cokleisli[G,String,Int] =
-//           tagless.this.InvariantK.catsTaglessContravariantKForCokleisli[String, Int].contramapK[F, G](af.foldSpecialized(init)(f))(fk);
-//         override def id(id: G[Int]): Int = af.id(tagless.this.`package`.catsTaglessApplyKForIdK[Int].mapK[G, F](id)(fk))
-//       };
-//       new $anon()
-//     }
-//   };
-//   new $anon()
-// }
-
-  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], egk: Expr[G ~> F])(using Quotes): Expr[Alg[G]] =
+  @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], efk: Expr[G ~> F])(using Quotes): Expr[Alg[G]] =
     import quotes.reflect.*
     val className = "$anon()"
     val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]])
@@ -65,29 +43,17 @@ object macroContravariantK:
             // Cokleisli case is handled here
             // head of inner is F :: G :: rest
             case AppliedType(tr, inner @ _ :: tail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
-              // report.errorAndAbort("Cokliesli derivation does not work yet.")
-              println("-------")
-              println(s"tr: $tr")
-              println(s"inner: $inner")
-              // List(
-              //   TypeRef(NoPrefix,type G),
-              //   TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class scala)),object Predef),type String),
-              //   TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),class Int))
               val mttree = tail.map(tr => TypeTree.of(using tr.asType))
 
-              println("-------")
-              // tagless.this.InvariantK.catsTaglessContravariantKForCokleisli[String, Int].contramapK[F, G](af.foldSpecialized(init)(f))(fk);
-              // cats.tagless.InvariantK.catsTaglessContravariantKForCokleisli[scala.Predef.String, scala.Int].contramapK[G, F](af.foldSpecialized(init)(f))
-              // cats.tagless.InvariantK.catsTaglessContravariantKForCokleisli[scala.Predef.String, scala.Int].contramapK[F, G](af.foldSpecialized(init)(f))
-              println("&&&&&&&&&&&&&")
-              println(
-                List(Select(eaf.asTerm, method))
-              )
-              println(argss)
-              println("&&&&&&&&&&&&&")
-
-              // todo this should work with an arbitrary curried function arguments
-              val List(argfst, argsnd) = argss.flatten.collect { case t: Term => t }
+              val methodArgsApply =
+                argss.flatten
+                  .collect { case t: Term => t }
+                  .foldLeft(List.empty[Term]) {
+                    // the first argument
+                    case (Nil, term) => List(Apply(Select(eaf.asTerm, method), List(term)))
+                    // all the rest
+                    case (list, term) => List(Apply(list.head, List(term)))
+                  }
 
               Some(
                 Apply(
@@ -95,17 +61,9 @@ object macroContravariantK:
                     TypeApply(Ref(Symbol.requiredMethod("cats.tagless.InvariantK.catsTaglessContravariantKForCokleisli")), mttree),
                     "contramapK",
                     List(TypeRepr.of[F], TypeRepr.of[G]),
-                    List(
-                      Apply(
-                        Apply(
-                          Select(eaf.asTerm, method),
-                          List(argfst)
-                        ),
-                        List(argsnd)
-                      )
-                    )
+                    methodArgsApply
                   ),
-                  List(egk.asTerm)
+                  List(efk.asTerm)
                 )
               )
 
@@ -128,7 +86,7 @@ object macroContravariantK:
                           List(TypeRepr.of[G], TypeRepr.of[F]),
                           List(t)
                         ),
-                        List(egk.asTerm)
+                        List(efk.asTerm)
                       )
                     }
                   }
