@@ -18,7 +18,7 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
       invariantK `shouldBe` a[InvariantK[SimpleService]]
     }
 
-    it("FunctorK should be a valid instance for a simple algebra") {
+    it("InvariantK should be a valid instance for a simple algebra") {
       val invariantK = Derive.invariantK[SimpleService]
       val functorK   = Derive.functorK[SimpleService]
 
@@ -29,6 +29,7 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
 
       invariantInstance.id() `shouldBe` optionalInstance.id()
       invariantInstance.list(0) `shouldBe` optionalInstance.list(0)
+      invariantInstance.lists(0, 1) `shouldBe` optionalInstance.lists(0, 1)
       invariantInstance.paranthesless `shouldBe` optionalInstance.paranthesless
       invariantInstance.tuple `shouldBe` optionalInstance.tuple
     }

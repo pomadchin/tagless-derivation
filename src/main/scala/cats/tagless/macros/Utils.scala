@@ -40,12 +40,25 @@ object Utils:
     def decls(cls: Symbol): List[Symbol] = methods.map { method =>
       method.tree.changeOwner(cls) match
         case DefDef(name, clauses, typedTree, _) =>
-          val tpeRepr = TypeRepr.of(using typedTree.tpe.asType)
-          val names   = clauses.flatMap(_.params.collect { case v: ValDef => v.name })
-          val tpes    = clauses.flatMap(_.params.collect { case v: ValDef => v.tpt.tpe })
+          val tpeRepr       = TypeRepr.of(using typedTree.tpe.asType)
+          val namesWithTpes = clauses.map(_.params.collect { case v: ValDef => (v.name, v.tpt.tpe) }.unzip)
 
-          // nullary methods
-          val methodType = if (clauses.isEmpty) ByNameType(tpeRepr) else MethodType(names)(_ => tpes, _ => tpeRepr)
+          val methodType =
+            // nullary methods
+            if clauses.isEmpty || namesWithTpes.isEmpty then ByNameType(tpeRepr)
+            else
+              // In case of more than a single nested list it is a curried method.
+              // The idea is to foldRight it recursively nesting the result types.
+              // The most right should point to the actual method result type, and every other points to the previous,
+              // for more details, see: https://github.com/lampepfl/dotty/blob/3ad97df9b5e7ff6adf9952f0efc7f2df813ba395/compiler/src/dotty/tools/dotc/semanticdb/TypeOps.scala#L90-L94
+              namesWithTpes
+                .foldRight(Option.empty[MethodType]) { case ((nms, tps), acc) =>
+                  acc match
+                    case None          => Some(MethodType(nms)(_ => tps, _ => tpeRepr))
+                    case Some(resType) => Some(MethodType(nms)(_ => tps, _ => resType))
+                }
+                .get
+
           Symbol.newMethod(
             cls,
             name,
