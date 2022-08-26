@@ -1,6 +1,6 @@
 name         := "tagless-derivation"
 version      := "0.1.0-SNAPSHOT"
-scalaVersion := "3.2.0-RC4"
+scalaVersion := "3.2.0-RC4" // "3.2.1-RC1-bin-SNAPSHOT" // "3.2.0-RC4"
 organization := "com.tmitch4s"
 scalacOptions ++= Seq(
   "-deprecation",
@@ -12,7 +12,8 @@ scalacOptions ++= Seq(
   "-language:existentials",
   "-feature",
   "-source:future",
-  "-explain"
+  "-explain"//,
+  // "-Xprint:typer"
 )
 
 scalacOptions ++= {
