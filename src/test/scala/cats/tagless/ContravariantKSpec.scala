@@ -19,6 +19,12 @@ class ContravariantKSpec extends AnyFunSpec with Matchers:
     def ids(id1: F[Int], id2: F[Int]): Int
     def foldSpecialized(init: String)(f: (Int, String) => Int): Cokleisli[F, String, Int]
 
+  val instance = new SimpleService[Id]:
+    def id(id: Id[Int]): Int                 = id
+    def ids(id1: Id[Int], id2: Id[Int]): Int = id1 + id2
+    def foldSpecialized(init: String)(f: (Int, String) => Int): Cokleisli[Id, String, Int] =
+      Cokleisli.apply((str: Id[String]) => f(init.toInt, str))
+
   describe("ContravariantK Spec") {
     it("DeriveMacro should derive instance for a simple algebra") {
       def contravariantK = Derive.contravariantK[SimpleService]
@@ -26,7 +32,15 @@ class ContravariantKSpec extends AnyFunSpec with Matchers:
     }
 
     it("DeriveMacro should derive instance for a simple algebra #2") {
-      def contravariantK = Derive.contravariantK[SimpleService]
+      def contravariantK   = Derive.contravariantK[SimpleService]
+      val fk: Option ~> Id = FunctionK.lift[Option, Id]([X] => (id: Option[X]) => id.get)
+      val optionalInstance = contravariantK.contramapK(instance)(fk)
+
+      val f: (Int, String) => Int = { (i, s) => i + s.toInt }
+
+      optionalInstance.id(Some(23)) `shouldBe` instance.id(23)
+      optionalInstance.ids(Some(0), Some(1)) `shouldBe` instance.ids(0, 1)
+      optionalInstance.foldSpecialized("0")(f).run(Some("1")) `shouldBe` instance.foldSpecialized("0")(f).run("1")
     }
 
     it("DeriveMacro should not derive instance for a not simple algebra") {
