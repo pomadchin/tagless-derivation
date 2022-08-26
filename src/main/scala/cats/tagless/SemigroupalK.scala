@@ -1,6 +1,7 @@
 package cats.tagless
 
 import cats.data.Tuple2K
+import cats.tagless.macros.Derive
 
 import scala.annotation.implicitNotFound
 
@@ -8,3 +9,6 @@ import scala.annotation.implicitNotFound
 trait SemigroupalK[Alg[_[_]]] extends Serializable {
   def productK[F[_], G[_]](af: Alg[F], ag: Alg[G]): Alg[Tuple2K[F, G, *]]
 }
+
+object SemigroupalK:
+  inline def derived[Alg[_[_]]] = Derive.semigroupalK[Alg]

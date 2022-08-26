@@ -37,4 +37,9 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.invariantK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
     }
+
+    it("InvariantK derives syntax") {
+      trait SimpleServiceSyntax[F[_]] derives InvariantK:
+        def id(): F[Int]
+    }
   }

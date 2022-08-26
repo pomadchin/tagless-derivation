@@ -1,6 +1,7 @@
 package cats.tagless
 
 import cats.~>
+import cats.tagless.macros.Derive
 
 import scala.annotation.implicitNotFound
 
@@ -8,3 +9,6 @@ import scala.annotation.implicitNotFound
 trait InvariantK[Alg[_[_]]] extends Serializable {
   def imapK[F[_], G[_]](af: Alg[F])(fk: F ~> G)(gk: G ~> F): Alg[G]
 }
+
+object InvariantK:
+  inline def derived[Alg[_[_]]] = Derive.invariantK[Alg]

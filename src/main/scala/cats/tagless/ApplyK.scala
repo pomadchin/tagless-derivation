@@ -1,7 +1,8 @@
 package cats.tagless
 
-import cats.data.Tuple2K
 import cats.~>
+import cats.data.Tuple2K
+import cats.tagless.macros.Derive
 
 import scala.annotation.implicitNotFound
 
@@ -18,3 +19,5 @@ object ApplyK:
   private val idKInstance: ApplyK[IdK[Any]#λ] = new ApplyK[IdK[Any]#λ]:
     def mapK[F[_], G[_]](af: F[Any])(fk: F ~> G)     = fk(af)
     def productK[F[_], G[_]](af: F[Any], ag: G[Any]) = Tuple2K(af, ag)
+
+  inline def derived[Alg[_[_]]] = Derive.applyK[Alg]

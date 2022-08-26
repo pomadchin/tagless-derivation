@@ -32,4 +32,9 @@ class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.semigroupalK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
     }
+
+    it("SemigroupalK derives syntax") {
+      trait SimpleServiceSyntax[F[_]] derives SemigroupalK:
+        def id(): F[Int]
+    }
   }

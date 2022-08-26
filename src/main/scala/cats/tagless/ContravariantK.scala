@@ -2,6 +2,7 @@ package cats.tagless
 
 import cats.~>
 import cats.data.Cokleisli
+import cats.tagless.macros.Derive
 
 import scala.annotation.implicitNotFound
 
@@ -22,3 +23,5 @@ object ContravariantK:
     new ContravariantK[[W[_]] =>> Cokleisli[W, Any, Any]] {
       def contramapK[F[_], G[_]](af: Cokleisli[F, Any, Any])(fk: G ~> F) = Cokleisli(ga => af.run(fk(ga)))
     }
+
+  inline def derived[Alg[_[_]]] = Derive.contravariantK[Alg]
