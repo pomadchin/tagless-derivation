@@ -2,7 +2,7 @@ package cats.tagless.macros
 
 import cats.tagless.*
 import quoted.*
-import cats.{Id, ~>}
+import cats.{~>, Id}
 import cats.data.Tuple2K
 
 import scala.annotation.experimental
@@ -26,15 +26,18 @@ object macroMinimized:
   @experimental def capture[Alg[_[_]]: Type, G[_]: Type](using Quotes): Expr[Alg[G]] =
     import quotes.reflect.*
     val className = "$anon()"
-    
+
     println("*******")
     println(TypeTree.of[Alg[G]])
     println("*******")
 
     TypeRepr.of[G].typeSymbol
-    val treef = TypeTree.of(using AppliedType(
-      TypeTree.ref(TypeTree.of[Alg[G]].tpe.simplified.typeSymbol).tpe, List(TypeRepr.of[G])
-    ).asType)
+    val treef = TypeTree.of(using
+      AppliedType(
+        TypeTree.ref(TypeTree.of[Alg[G]].tpe.simplified.typeSymbol).tpe,
+        List(TypeRepr.of[G])
+      ).asType
+    )
 
     println("|||||||||||||||")
     println(TypeRepr.of[G].dealias.show)
@@ -42,36 +45,36 @@ object macroMinimized:
     println("|||||||||||||||")
 
     var trr: AppliedType | Null = null
-    TypeTree.of[Alg[G]].match
-      case i: Inferred => 
-        println("__________")
-        println(TypeTree.of[Alg[Id]].tpe.simplified.typeSymbol)
-        println()
-        println(TypeTree.ref(TypeTree.of[Alg[Id]].tpe.simplified.typeSymbol))
+    TypeTree
+      .of[Alg[G]]
+      .match
+        case i: Inferred =>
+          println("__________")
+          println(TypeTree.of[Alg[Id]].tpe.simplified.typeSymbol)
+          println()
+          println(TypeTree.ref(TypeTree.of[Alg[Id]].tpe.simplified.typeSymbol))
 
-        val rr: AppliedType = TypeTree.of[Alg[G]].tpe.simplified match
-          case AppliedType(repr, list) =>
-            AppliedType(TypeTree.ref(TypeTree.of[Alg[G]].tpe.simplified.typeSymbol).tpe, list)
+          val rr: AppliedType = TypeTree.of[Alg[G]].tpe.simplified match
+            case AppliedType(repr, list) =>
+              AppliedType(TypeTree.ref(TypeTree.of[Alg[G]].tpe.simplified.typeSymbol).tpe, list)
 
-        trr = rr
-      
-        println("*******")
-        println(rr)
-        println
-        println(TypeTree.of[Alg[Id]].tpe)
-        println("*******")
-        println
-        println(i.tpe)
-        println("__________")
-    
+          trr = rr
+
+          println("*******")
+          println(rr)
+          println
+          println(TypeTree.of[Alg[Id]].tpe)
+          println("*******")
+          println
+          println(i.tpe)
+          println("__________")
 
     println(":::::::::::::::")
     println(TypeTree.of[Alg[G]].tpe.=:=(TypeTree.of[Alg[Id]].tpe))
     println(":::::::::::::::")
 
-
-    val parents   = List(TypeTree.of[Object], TypeTree.of[Alg[G]]) // TypeTree.of(using TypeTree.of[Alg[G]].tpe.simplified.asType)
-    val decls     = definedMethodsInTypeWithOwner[Alg]
+    val parents = List(TypeTree.of[Object], TypeTree.of[Alg[G]]) // TypeTree.of(using TypeTree.of[Alg[G]].tpe.simplified.asType)
+    val decls   = definedMethodsInTypeWithOwner[Alg]
 
     // TypeTree.of()
 

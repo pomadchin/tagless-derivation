@@ -93,7 +93,6 @@ object Utils:
 
     decls
 
-
   // returns a function that reconstructs functions of the Algebra to belong to a specific owner
   // cls => List[Symbol] function
   def definedMethodsInTypeWithOwner[Alg[_[_]]: Type](using Quotes): quotes.reflect.Symbol => List[quotes.reflect.Symbol] =
@@ -129,7 +128,6 @@ object Utils:
                 }
                 .get
 
-
           println
           println(s"nochange methodType: ${methodType}")
 
@@ -156,7 +154,6 @@ object Utils:
                     case Some(resType) => Some(MethodType(nms)(_ => tps, _ => resType))
                 }
                 .get
-
 
           println(s"methodType: ${methodType}")
 
