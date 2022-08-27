@@ -37,4 +37,17 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.invariantK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
     }
+
+    it("InvariantK derives syntax") {
+      val fk: Id ~> Option  = FunctionK.lift([X] => (id: Id[X]) => Option(id))
+      val gk: Option ~> Id  = FunctionK.lift([X] => (id: Option[X]) => id.get)
+      val invariantInstance = instance.imapK(fk)(gk)
+      val optionalInstance  = instance.mapK(fk)
+
+      invariantInstance.id() `shouldBe` optionalInstance.id()
+      invariantInstance.list(0) `shouldBe` optionalInstance.list(0)
+      invariantInstance.lists(0, 1) `shouldBe` optionalInstance.lists(0, 1)
+      invariantInstance.paranthesless `shouldBe` optionalInstance.paranthesless
+      invariantInstance.tuple `shouldBe` optionalInstance.tuple
+    }
   }

@@ -31,4 +31,14 @@ class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.functorK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
     }
+
+    it("FunctorK derives syntax") {
+      val optionalInstance = instance.mapK(FunctionK.lift([X] => (id: Id[X]) => Some(id)))
+
+      optionalInstance.id() `shouldBe` Some(instance.id())
+      optionalInstance.list(0) `shouldBe` Some(instance.list(0))
+      optionalInstance.lists(0, 1) `shouldBe` Some(instance.lists(0, 1))
+      optionalInstance.paranthesless `shouldBe` Some(instance.paranthesless)
+      optionalInstance.tuple `shouldBe` Some(instance.tuple)
+    }
   }

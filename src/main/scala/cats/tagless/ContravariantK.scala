@@ -2,6 +2,7 @@ package cats.tagless
 
 import cats.~>
 import cats.data.Cokleisli
+import cats.tagless.macros.Derive
 
 import scala.annotation.implicitNotFound
 
@@ -12,6 +13,10 @@ import scala.annotation.implicitNotFound
 trait ContravariantK[Alg[_[_]]] extends InvariantK[Alg] {
   def contramapK[F[_], G[_]](af: Alg[F])(fk: G ~> F): Alg[G]
   override def imapK[F[_], G[_]](af: Alg[F])(fk: F ~> G)(gk: G ~> F): Alg[G] = contramapK(af)(gk)
+
+  extension [Alg[_[_]], F[_]](inline af: Alg[F])
+    inline def contramapK[G[_]](inline fk: G ~> F)(using contravariantK: ContravariantK[Alg]): Alg[G] =
+      contravariantK.contramapK(af)(fk)
 }
 
 object ContravariantK:
@@ -22,3 +27,5 @@ object ContravariantK:
     new ContravariantK[[W[_]] =>> Cokleisli[W, Any, Any]] {
       def contramapK[F[_], G[_]](af: Cokleisli[F, Any, Any])(fk: G ~> F) = Cokleisli(ga => af.run(fk(ga)))
     }
+
+  inline def derived[Alg[_[_]]] = Derive.contravariantK[Alg]

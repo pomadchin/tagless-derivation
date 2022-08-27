@@ -1,9 +1,9 @@
 package cats.tagless.macros
 
 import cats.tagless.*
-import quoted.*
 import cats.~>
 
+import quoted.*
 import scala.annotation.experimental
 import compiletime.asMatchable
 
