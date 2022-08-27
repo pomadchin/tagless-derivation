@@ -55,18 +55,6 @@ object macroContravariantK:
                     case (list, term) => List(Apply(list.head, List(term)))
                   }
 
-              // println("|||||||||")
-              // println(TypeTree.of[ContravariantK[[W[_]] =>> cats.data.Cokleisli[W, String, Int]]])
-
-              // //println()
-              // println("|||||||||")
-              // println(Implicits.search(TypeTree.of[ContravariantK[[W[_]] =>> cats.data.Cokleisli[W, String, Int]]].tpe))
-              // println("|||||||||")
-
-              // orut
-              // println("here")
-              // println(tr.show)
-              // println(s"if tr.baseClasses: ${tr.baseClasses}")
               Some(
                 Apply(
                   Select.overloaded(
