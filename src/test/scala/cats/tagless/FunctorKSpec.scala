@@ -33,8 +33,6 @@ class FunctorKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("FunctorK derives syntax") {
-      import cats.tagless.syntax.functorK.*
-
       val optionalInstance = instance.mapK(FunctionK.lift([X] => (id: Id[X]) => Some(id)))
 
       optionalInstance.id() `shouldBe` Some(instance.id())

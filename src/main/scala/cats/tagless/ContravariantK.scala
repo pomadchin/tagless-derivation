@@ -13,6 +13,10 @@ import scala.annotation.implicitNotFound
 trait ContravariantK[Alg[_[_]]] extends InvariantK[Alg] {
   def contramapK[F[_], G[_]](af: Alg[F])(fk: G ~> F): Alg[G]
   override def imapK[F[_], G[_]](af: Alg[F])(fk: F ~> G)(gk: G ~> F): Alg[G] = contramapK(af)(gk)
+
+  extension [Alg[_[_]], F[_]](inline af: Alg[F])
+    inline def contramapK[G[_]](inline fk: G ~> F)(using contravariantK: ContravariantK[Alg]): Alg[G] =
+      contravariantK.contramapK(af)(fk)
 }
 
 object ContravariantK:

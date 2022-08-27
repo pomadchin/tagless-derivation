@@ -39,9 +39,6 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("InvariantK derives syntax") {
-      import cats.tagless.syntax.functorK.*
-      import cats.tagless.syntax.invariantK.*
-
       val fk: Id ~> Option  = FunctionK.lift([X] => (id: Id[X]) => Option(id))
       val gk: Option ~> Id  = FunctionK.lift([X] => (id: Option[X]) => id.get)
       val invariantInstance = instance.imapK(fk)(gk)

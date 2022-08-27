@@ -36,8 +36,6 @@ class ContravariantKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("ContravariantK derives syntax") {
-      import cats.tagless.syntax.contravariantK.*
-
       val fk: Option ~> Id = FunctionK.lift[Option, Id]([X] => (id: Option[X]) => id.get)
       val optionalInstance = instancec.contramapK(fk)
 

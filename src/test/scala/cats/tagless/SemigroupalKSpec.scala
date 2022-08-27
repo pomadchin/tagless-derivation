@@ -34,9 +34,6 @@ class SemigroupalKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("SemigroupalK derives syntax") {
-      import cats.tagless.syntax.functorK.*
-      import cats.tagless.syntax.semigroupalK.*
-
       val optionalInstance = instance.mapK(FunctionK.lift([X] => (id: Id[X]) => Some(id)))
       val combinedInstance = instance.productK(optionalInstance)
 

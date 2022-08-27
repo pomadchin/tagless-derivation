@@ -37,9 +37,6 @@ class ApplyKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("ApplyK derives syntax") {
-      import cats.tagless.syntax.functorK.*
-      import cats.tagless.syntax.applyK.*
-
       val optionalInstance = instance.mapK(FunctionK.lift([X] => (id: Id[X]) => Option(id)))
 
       val fk: Tuple2K[Id, Option, *] ~> Try = FunctionK.lift([X] => (tup: Tuple2K[Id, Option, X]) => Try(tup.second.map(_ => tup.first).get))
