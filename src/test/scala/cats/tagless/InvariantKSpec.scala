@@ -39,7 +39,18 @@ class InvariantKSpec extends AnyFunSpec with Matchers with Fixtures:
     }
 
     it("InvariantK derives syntax") {
-      trait SimpleServiceSyntax[F[_]] derives InvariantK:
-        def id(): F[Int]
+      import cats.tagless.syntax.functorK.*
+      import cats.tagless.syntax.invariantK.*
+
+      val fk: Id ~> Option  = FunctionK.lift([X] => (id: Id[X]) => Option(id))
+      val gk: Option ~> Id  = FunctionK.lift([X] => (id: Option[X]) => id.get)
+      val invariantInstance = instance.imapK(fk)(gk)
+      val optionalInstance  = instance.mapK(fk)
+
+      invariantInstance.id() `shouldBe` optionalInstance.id()
+      invariantInstance.list(0) `shouldBe` optionalInstance.list(0)
+      invariantInstance.lists(0, 1) `shouldBe` optionalInstance.lists(0, 1)
+      invariantInstance.paranthesless `shouldBe` optionalInstance.paranthesless
+      invariantInstance.tuple `shouldBe` optionalInstance.tuple
     }
   }

@@ -1,10 +1,10 @@
 package cats.tagless.macros
 
 import cats.tagless.*
-import quoted.*
 import cats.~>
 import cats.data.Tuple2K
 
+import quoted.*
 import scala.annotation.experimental
 import compiletime.asMatchable
 

@@ -4,7 +4,7 @@ import cats.Id
 
 trait Fixtures:
   /** Simple algebra definition */
-  trait SimpleService[F[_]]:
+  trait SimpleService[F[_]] derives FunctorK, SemigroupalK, ApplyK, InvariantK:
     def id(): F[Int]
     def list(id: Int): F[List[Int]]
     def lists(id1: Int, id2: Int): F[List[Int]]

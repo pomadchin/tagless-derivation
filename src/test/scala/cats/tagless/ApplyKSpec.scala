@@ -32,12 +32,22 @@ class ApplyKSpec extends AnyFunSpec with Matchers with Fixtures:
       tryInstance.tuple `shouldBe` Try(instance.tuple)
     }
 
-    it("ApplyK derives syntax") {
-      trait SimpleServiceSyntax[F[_]] derives ApplyK:
-        def id(): F[Int]
-    }
-
     it("DeriveMacro should not derive instance for a not simple algebra") {
       typeCheckErrors("Derive.applyK[NotSimpleService]").map(_.message) `shouldBe` List("Derive works with simple algebras only.")
+    }
+
+    it("ApplyK derives syntax") {
+      import cats.tagless.syntax.functorK.*
+      import cats.tagless.syntax.applyK.*
+
+      val optionalInstance = instance.mapK(FunctionK.lift([X] => (id: Id[X]) => Option(id)))
+
+      val fk: Tuple2K[Id, Option, *] ~> Try = FunctionK.lift([X] => (tup: Tuple2K[Id, Option, X]) => Try(tup.second.map(_ => tup.first).get))
+      val tryInstance                       = instance.map2K(optionalInstance)(fk)
+
+      tryInstance.id() `shouldBe` Try(instance.id())
+      tryInstance.list(0) `shouldBe` Try(instance.list(0))
+      tryInstance.paranthesless `shouldBe` Try(instance.paranthesless)
+      tryInstance.tuple `shouldBe` Try(instance.tuple)
     }
   }

@@ -14,7 +14,7 @@ import scala.compiletime.testing.*
 class ContravariantKSpec extends AnyFunSpec with Matchers:
   import Fixtures.NotSimpleService
 
-  trait SimpleService[F[_]]:
+  trait SimpleService[F[_]] derives ContravariantK:
     def id(id: F[Int]): Int
     def ids(id1: F[Int], id2: F[Int]): Int
     def foldSpecialized(init: String)(f: (Int, String) => Int): Cokleisli[F, String, Int]
@@ -48,7 +48,15 @@ class ContravariantKSpec extends AnyFunSpec with Matchers:
     }
 
     it("ContravariantK derives syntax") {
-      trait SimpleServiceSyntax[F[_]] derives ContravariantK:
-        def id(i: F[Int]): Int
+      import cats.tagless.syntax.contravariantK.*
+
+      val fk: Option ~> Id = FunctionK.lift[Option, Id]([X] => (id: Option[X]) => id.get)
+      val optionalInstance = instance.contramapK(fk)
+
+      val f: (Int, String) => Int = { (i, s) => i + s.toInt }
+
+      optionalInstance.id(Some(23)) `shouldBe` instance.id(23)
+      optionalInstance.ids(Some(0), Some(1)) `shouldBe` instance.ids(0, 1)
+      optionalInstance.foldSpecialized("0")(f).run(Some("1")) `shouldBe` instance.foldSpecialized("0")(f).run("1")
     }
   }
