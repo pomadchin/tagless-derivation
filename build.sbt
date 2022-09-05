@@ -1,7 +1,7 @@
 name         := "tagless-derivation"
 version      := "0.1.0-SNAPSHOT"
-scalaVersion := "3.2.0-RC4"
-organization := "com.tmitch4s"
+scalaVersion := "3.2.0"
+organization := "com.pomadchin"
 scalacOptions ++= Seq(
   "-deprecation",
   "-unchecked",
