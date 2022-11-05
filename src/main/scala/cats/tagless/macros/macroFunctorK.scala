@@ -50,7 +50,7 @@ object macroFunctorK:
     val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
     val expr   = Block(List(clsDef), newCls).asExpr
 
-    // println("============")
-    // println(expr.show)
-    // println("============")
+    println("============")
+    println(expr.show)
+    println("============")
     expr.asExprOf[Alg[G]]

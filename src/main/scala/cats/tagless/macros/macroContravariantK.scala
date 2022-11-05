@@ -2,7 +2,7 @@ package cats.tagless.macros
 
 import cats.tagless.*
 import cats.~>
-import cats.data.Tuple2K
+import cats.data.{Tuple2K, Cokleisli}
 
 import quoted.*
 import scala.annotation.experimental
@@ -23,9 +23,9 @@ object macroContravariantK:
       }
     }
 
-    // println("-----------")
-    // println(res.show)
-    // println("-----------")
+    println("-----------")
+    println(res.show)
+    println("-----------")
     res
 
   @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], efk: Expr[G ~> F])(using Quotes): Expr[Alg[G]] =
@@ -42,7 +42,7 @@ object macroContravariantK:
           typedTree.tpe.simplified.asMatchable match
             // Cokleisli case is handled here
             // head of inner is F :: G :: rest
-            case AppliedType(tr, _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
+            case AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
               val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
 
               val methodArgsApply =
@@ -54,6 +54,66 @@ object macroContravariantK:
                     // all the rest
                     case (list, term) => List(Apply(list.head, List(term)))
                   }
+
+               // TypeRepr.typeConstructorOf()
+               // val showCtor = TypeRepr.typeConstructorOf(classOf[[W[_]] =>> Cokleisli[W, String, Int]])   
+
+              println("*********")
+              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])])
+
+              println("----")
+              // HKTypeLambda(
+              // List(W), 
+              // List(
+              //   TypeBounds(TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Nothing),
+              //   HKTypeLambda(List(_$12), 
+              //     List(TypeBounds(
+              //       TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Nothing),
+              //       TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Any)
+              //   )), TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Any), List()))), 
+              //   AppliedType(TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class cats)),object data),Cokleisli),List(TypeParamRef(W), TypeRef(TermRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Predef),String), TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Int))))
+
+              // AppliedType(TypeRef)
+              // println(TypeRepr.typeConstructorOf(classOf[Cokleisli[?, ?, ?]]))
+              val cokleisliCtor = TypeRepr.typeConstructorOf(classOf[Cokleisli[?, ?, ?]])
+              
+              TypeRepr.of[[W[_]] =>> W]
+              println(cokleisliCtor)
+              println("~~~~~~~~~~~")
+              val xt: TypeRepr = TypeLambda(
+                List("G[_]"),
+                _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any]), TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+                (tl : TypeLambda) => cokleisliCtor.appliedTo(inner))
+              // val ctorFilled = cokleisliCtor.appliedTo(TypeRepr.of[[W[_]] =>> W] :: innerTail)
+              val ctorFilled = cokleisliCtor.appliedTo(inner)
+              println("----")
+              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])])
+              println("----")
+              println(ctorFilled)
+              println("----")
+              println(xt)
+              println("----")
+              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])].show)
+              println("----")
+              println(ctorFilled.show)
+              println("----")
+              println(xt.show)
+              println("~~~~~~~~~~~")
+              Implicits.search(xt) match
+                case si: ImplicitSearchSuccess =>
+                  println(s"si: $si")
+                case fi => println("fi!")
+              
+              println("----")
+
+              println("*********")
+              val x4T =
+                TypeLambda(
+                  List("A","B"),
+                  _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any]), TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+                  (tl : TypeLambda) => tl.param(1))
+              println(x4T)
+              println("*********")
 
               Some(
                 Apply(
@@ -97,7 +157,7 @@ object macroContravariantK:
     val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
     val expr   = Block(List(clsDef), newCls).asExpr
 
-    // println("============")
-    // println(expr.show)
-    // println("============")
+    println("============")
+    println(expr.show)
+    println("============")
     expr.asExprOf[Alg[G]]

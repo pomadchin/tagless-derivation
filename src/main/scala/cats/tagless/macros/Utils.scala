@@ -17,11 +17,19 @@ object Utils:
       val methods     = definedMethodsInTypeSym(using quotes)(clz)
       methods.map { method =>
         val asSeenApplied = algFApplied.memberType(method)
+        println(s"method.flags: ${method.flags.show}")
+
+        // method.flags | Flags.Method
+        
+        // method.flags.
+        if method.flags.is(Flags.Method) then println("lol")
+        if method.flags.is(Flags.Method) then println((method.flags & Flags.Method).show)
+        
         Symbol.newMethod(
           clz,
           method.name,
           asSeenApplied,
-          flags = Flags.EmptyFlags /*TODO: method.flags */,
+          flags = Flags.Method, // method.flags is Flags.Deferred | Flags.Method, we'd like to unset the Deferred flag here
           privateWithin = method.privateWithin.fold(Symbol.noSymbol)(_.typeSymbol)
         )
       }
