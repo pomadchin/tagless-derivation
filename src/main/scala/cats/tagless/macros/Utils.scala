@@ -17,19 +17,11 @@ object Utils:
       val methods     = definedMethodsInTypeSym(using quotes)(clz)
       methods.map { method =>
         val asSeenApplied = algFApplied.memberType(method)
-        println(s"method.flags: ${method.flags.show}")
-
-        // method.flags | Flags.Method
-        
-        // method.flags.
-        if method.flags.is(Flags.Method) then println("lol")
-        if method.flags.is(Flags.Method) then println((method.flags & Flags.Method).show)
-        
         Symbol.newMethod(
           clz,
           method.name,
           asSeenApplied,
-          flags = Flags.Method, // method.flags is Flags.Deferred | Flags.Method, we'd like to unset the Deferred flag here
+          flags = Flags.Method, // method.flags is Flags.Deferred | Flags.Method, we'd like to unset the Deferred flag here // method.flags. &~ Flags.Deferred?
           privateWithin = method.privateWithin.fold(Symbol.noSymbol)(_.typeSymbol)
         )
       }
@@ -52,3 +44,16 @@ object Utils:
         if !member.isClassConstructor
         if !member.flags.is(Flags.Synthetic)
       } yield member
+
+
+// copied from the dotty repo
+object TypeToolbox:
+  inline def show[A <: AnyKind]: String = ${ showImpl[A] }
+  private def showImpl[A <: AnyKind: Type](using Quotes) : Expr[String] =
+    Expr(Type.show[A])
+
+  inline def showStructure[A <: AnyKind]: String = ${ showStructureImpl[A] }
+  private def showStructureImpl[A <: AnyKind](using q: Quotes, a: Type[A]) : Expr[String] = {
+    import q.reflect.*
+    Expr(TypeRepr.of[A].show(using Printer.TypeReprStructure))
+  }

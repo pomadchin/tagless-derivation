@@ -23,9 +23,9 @@ object macroContravariantK:
       }
     }
 
-    println("-----------")
-    println(res.show)
-    println("-----------")
+    // println("-----------")
+    // println(res.show)
+    // println("-----------")
     res
 
   @experimental def capture[Alg[_[_]]: Type, F[_]: Type, G[_]: Type](eaf: Expr[Alg[F]], efk: Expr[G ~> F])(using Quotes): Expr[Alg[G]] =
@@ -42,8 +42,41 @@ object macroContravariantK:
           typedTree.tpe.simplified.asMatchable match
             // Cokleisli case is handled here
             // head of inner is F :: G :: rest
-            case AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
+            case at @ AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol(classOf[Cokleisli[?, ?, ?]].getName)) =>
               val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
+
+              // Build a typeRepr for
+              // ContravariantK[[W[_]] =>> Cokleisli[W, A, B]]
+              // A and B are in the innerTail
+              val contravariantKImplicitTypeRepr = 
+                TypeRepr
+                  .typeConstructorOf(classOf[ContravariantK[?]])
+                  .appliedTo(
+                    TypeLambda(
+                      List("W"),
+                      (tl: TypeLambda) => List(
+                        TypeBounds(
+                          TypeRepr.of[Nothing],
+                          TypeLambda(
+                            List("_"),
+                            _ => List(
+                              TypeBounds(
+                                TypeRepr.of[Nothing],
+                                TypeRepr.of[Any]
+                              )
+                            ), 
+                            _ => TypeRepr.of[Any]
+                          )
+                        )
+                      ),
+                      (tl : TypeLambda) => AppliedType(tr, tl.param(0) :: innerTail)
+                    )
+                  )
+
+              val instanceK = 
+                Implicits.search(contravariantKImplicitTypeRepr) match
+                  case res: ImplicitSearchSuccess => res.tree
+                  case _ => report.errorAndAbort(s"No ${contravariantKImplicitTypeRepr} implicit found.") 
 
               val methodArgsApply =
                 argss.flatten
@@ -55,70 +88,10 @@ object macroContravariantK:
                     case (list, term) => List(Apply(list.head, List(term)))
                   }
 
-               // TypeRepr.typeConstructorOf()
-               // val showCtor = TypeRepr.typeConstructorOf(classOf[[W[_]] =>> Cokleisli[W, String, Int]])   
-
-              println("*********")
-              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])])
-
-              println("----")
-              // HKTypeLambda(
-              // List(W), 
-              // List(
-              //   TypeBounds(TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Nothing),
-              //   HKTypeLambda(List(_$12), 
-              //     List(TypeBounds(
-              //       TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Nothing),
-              //       TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Any)
-              //   )), TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Any), List()))), 
-              //   AppliedType(TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class cats)),object data),Cokleisli),List(TypeParamRef(W), TypeRef(TermRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Predef),String), TypeRef(TermRef(ThisType(TypeRef(NoPrefix,module class <root>)),object scala),Int))))
-
-              // AppliedType(TypeRef)
-              // println(TypeRepr.typeConstructorOf(classOf[Cokleisli[?, ?, ?]]))
-              val cokleisliCtor = TypeRepr.typeConstructorOf(classOf[Cokleisli[?, ?, ?]])
-              
-              TypeRepr.of[[W[_]] =>> W]
-              println(cokleisliCtor)
-              println("~~~~~~~~~~~")
-              val xt: TypeRepr = TypeLambda(
-                List("G[_]"),
-                _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any]), TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-                (tl : TypeLambda) => cokleisliCtor.appliedTo(inner))
-              // val ctorFilled = cokleisliCtor.appliedTo(TypeRepr.of[[W[_]] =>> W] :: innerTail)
-              val ctorFilled = cokleisliCtor.appliedTo(inner)
-              println("----")
-              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])])
-              println("----")
-              println(ctorFilled)
-              println("----")
-              println(xt)
-              println("----")
-              println(TypeRepr.of[([W[_]] =>> Cokleisli[W, String, Int])].show)
-              println("----")
-              println(ctorFilled.show)
-              println("----")
-              println(xt.show)
-              println("~~~~~~~~~~~")
-              Implicits.search(xt) match
-                case si: ImplicitSearchSuccess =>
-                  println(s"si: $si")
-                case fi => println("fi!")
-              
-              println("----")
-
-              println("*********")
-              val x4T =
-                TypeLambda(
-                  List("A","B"),
-                  _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any]), TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-                  (tl : TypeLambda) => tl.param(1))
-              println(x4T)
-              println("*********")
-
               Some(
                 Apply(
                   Select.overloaded(
-                    TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ContravariantK.catsTaglessContravariantKForCokleisli")), mttree),
+                    instanceK,
                     "contramapK",
                     List(TypeRepr.of[F], TypeRepr.of[G]),
                     methodArgsApply
@@ -132,6 +105,43 @@ object macroContravariantK:
 
             case inner =>
               val mttree = List(TypeTree.of(using inner.asType))
+
+              // AppliedType(
+              //   TypeRef(
+              //     TermRef(
+              //       ThisType(TypeRef(NoPrefix,module class cats)),
+              //       object tagless
+              //     ),
+              //     ApplyK
+              //   ),
+              //   List(
+              //     TypeRef(
+              //       AppliedType(
+              //         TypeRef(
+              //           TermRef(TermRef(ThisType(TypeRef(NoPrefix,module class cats)),object tagless), package),
+              //           IdK
+              //         ),
+              //         List(
+              //           TypeRef(
+              //             TermRef(ThisType(TypeRef(NoPrefix,module class <root>)), object scala),
+              //             Int
+              //           )
+              //         )
+              //       ),
+              //       λ
+              //     )
+              //   )
+              // )
+
+              // TypeRepr.of[IdK].appliedTo(inner)
+              // TODO: projection?
+              // build ApplyK and use search to summon
+              // val applyKImplicitTypeRepr = TypeRepr.of[ApplyK[IdK[Int]#λ]]
+              // val instanceK = 
+              //   Implicits.search(applyKImplicitTypeRepr) match
+              //     case res: ImplicitSearchSuccess => res.tree
+              //     case _ => report.errorAndAbort(s"No ${applyKImplicitTypeRepr} implicit found.") 
+
               Some(
                 Apply(
                   Select(eaf.asTerm, method),
@@ -139,7 +149,7 @@ object macroContravariantK:
                     _.collect { case term: Term =>
                       Apply(
                         Select.overloaded(
-                          TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ApplyK.catsTaglessApplyKForIdK")), mttree),
+                          TypeApply(Ref(Symbol.requiredMethod(s"${classOf[ApplyK[?]].getName}.catsTaglessApplyKForIdK")), mttree),
                           "mapK",
                           List(TypeRepr.of[G], TypeRepr.of[F]),
                           List(term)
@@ -157,7 +167,7 @@ object macroContravariantK:
     val newCls = Typed(Apply(Select(New(TypeIdent(cls)), cls.primaryConstructor), Nil), TypeTree.of[Alg[G]])
     val expr   = Block(List(clsDef), newCls).asExpr
 
-    println("============")
-    println(expr.show)
-    println("============")
+    // println("============")
+    // println(expr.show)
+    // println("============")
     expr.asExprOf[Alg[G]]
