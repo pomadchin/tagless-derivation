@@ -48,7 +48,7 @@ object macroInvariantK:
                 Apply(
                   Apply(
                     Select.overloaded(
-                      TypeApply(Ref(Symbol.requiredMethod(s"${classOf[ApplyK[?]].getName}.catsTaglessApplyKForIdK")), mttree),
+                      TypeApply(Ref(Symbol.requiredMethod(s"${classNameApplyK}.catsTaglessApplyKForIdK")), mttree),
                       "imapK",
                       List(TypeRepr.of[F], TypeRepr.of[G]),
                       List(aeaf)

@@ -2,7 +2,6 @@ package cats.tagless.macros
 
 import cats.tagless.*
 import cats.~>
-import cats.data.{Cokleisli, Tuple2K}
 
 import quoted.*
 import scala.annotation.experimental
@@ -41,16 +40,15 @@ object macroContravariantK:
         argss =>
           typedTree.tpe.simplified.asMatchable match
             // Cokleisli case is handled here
-            // head of inner is F :: G :: rest
-            case at @ AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol(classOf[Cokleisli[?, ?, ?]].getName)) =>
+            // tr is Cokleisli; inner is G :: A :: B; innerTail is A :: B
+            case AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol(classNameCokleisli)) =>
               val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
-
               // Build a typeRepr for
               // ContravariantK[[W[_]] =>> Cokleisli[W, A, B]]
               // A and B are in the innerTail
-              val contravariantKImplicitTypeRepr =
+              val contravariantKTypeRepr =
                 TypeRepr
-                  .typeConstructorOf(classOf[ContravariantK[?]])
+                  .of[ContravariantK]
                   .appliedTo(
                     TypeLambda(
                       List("W"),
@@ -75,10 +73,9 @@ object macroContravariantK:
                     )
                   )
 
-              val instanceK =
-                Implicits.search(contravariantKImplicitTypeRepr) match
-                  case res: ImplicitSearchSuccess => res.tree
-                  case _                          => report.errorAndAbort(s"No ${contravariantKImplicitTypeRepr} implicit found.")
+              val instanceK = Implicits.search(contravariantKTypeRepr) match
+                case res: ImplicitSearchSuccess => res.tree
+                case _                          => report.errorAndAbort(s"No ${contravariantKTypeRepr.show} implicit found.")
 
               val methodArgsApply =
                 argss.flatten
@@ -138,11 +135,10 @@ object macroContravariantK:
               // TypeRepr.of[IdK].appliedTo(inner)
               // TODO: projection?
               // build ApplyK and use search to summon
-              // val applyKImplicitTypeRepr = TypeRepr.of[ApplyK[IdK[Int]#λ]]
-              // val instanceK =
-              //   Implicits.search(applyKImplicitTypeRepr) match
-              //     case res: ImplicitSearchSuccess => res.tree
-              //     case _ => report.errorAndAbort(s"No ${applyKImplicitTypeRepr} implicit found.")
+              // val applyKTypeRepr = TypeRepr.of[ApplyK[IdK[Int]#λ]]
+              // val instanceK = Implicits.search(applyKTypeRepr) match
+              //   case res: ImplicitSearchSuccess => res.tree
+              //   case _ => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.")
 
               Some(
                 Apply(
@@ -151,7 +147,7 @@ object macroContravariantK:
                     _.collect { case term: Term =>
                       Apply(
                         Select.overloaded(
-                          TypeApply(Ref(Symbol.requiredMethod(s"${classOf[ApplyK[?]].getName}.catsTaglessApplyKForIdK")), mttree),
+                          TypeApply(Ref(Symbol.requiredMethod(s"${classNameApplyK}.catsTaglessApplyKForIdK")), mttree),
                           "mapK",
                           List(TypeRepr.of[G], TypeRepr.of[F]),
                           List(term)

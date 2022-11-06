@@ -46,7 +46,7 @@ object macroSemigroupalK:
               val mttree = inner.map(tr => TypeTree.of(using tr.asType))
               Some(
                 Apply(
-                  TypeApply(Ref(Symbol.requiredMethod(s"${classOf[Tuple2K[?, ?, ?]].getName}.apply")), mttree),
+                  TypeApply(Ref(Symbol.requiredMethod(s"${classNameTuple2K}.apply")), mttree),
                   List(aafe, aage)
                 )
               )
