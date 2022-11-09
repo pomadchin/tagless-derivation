@@ -11,7 +11,7 @@ object Utils:
   val classNameCokleisli = classOf[Cokleisli[?, ?, ?]].getName
   val classNameTuple2K   = classOf[Tuple2K[?, ?, ?]].getName
   val classNameApplyK    = classOf[ApplyK[?]].getName
-  val nameλ              = "λ"
+  val λlit               = "λ"
 
   def methodApply[Alg[_[_]]: Type, F[_]: Type](e: Expr[Alg[F]])(using Quotes): (quotes.reflect.Symbol, List[List[quotes.reflect.Tree]]) => quotes.reflect.Term =
     (method, argss) =>
@@ -88,7 +88,7 @@ object Utils:
         case repr                                                 => None
 
   def refinedTypeFindλ(using Quotes): quotes.reflect.TypeRepr => Option[(String, quotes.reflect.TypeRepr)] =
-    refinedTypeFind(nameλ)
+    refinedTypeFind(λlit)
 
   def summon(using Quotes): quotes.reflect.TypeRepr => quotes.reflect.Term =
     import quotes.reflect.*
