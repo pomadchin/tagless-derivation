@@ -5,6 +5,7 @@ import cats.tagless.{ApplyK, IdK}
 
 import quoted.*
 import compiletime.asMatchable
+import scala.annotation.experimental
 
 object Utils:
   val classNameCokleisli = classOf[Cokleisli[?, ?, ?]].getName
@@ -60,8 +61,17 @@ object Utils:
   //   type λ >: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int] <: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int]
   // }
   // i.e. a Refinement type (Object + the type declaration)
+  //
+  // val applyKTypeRepr = TypeRepr.of[IdK].appliedTo(inner) match
+  //   case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
+  //   case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}")
+  //
+  // val instanceK = Implicits.search(applyKTypeRepr) match
+  //   case res: ImplicitSearchSuccess => res.tree
+  //   case _                          => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.")
+  //
   // https://github.com/lampepfl/dotty/blob/1130c52a6476d473b41a598e23f0415e0f8d76dc/tests/run-macros/refined-selectable-macro/Macro_1.scala#L22-L37
-  def refinedTypes(using Quotes): quotes.reflect.TypeRepr => List[(String, quotes.reflect.TypeRepr)] = 
+  def refinedTypes(using Quotes): quotes.reflect.TypeRepr => List[(String, quotes.reflect.TypeRepr)] =
     import quotes.reflect.*
     (tr: TypeRepr) =>
       tr.asMatchable match {
@@ -69,27 +79,36 @@ object Utils:
         case repr                           => Nil
       }
 
-  def refinedTypeFind(searchName: String)(using Quotes): quotes.reflect.TypeRepr => Option[(String, quotes.reflect.TypeRepr)] = 
+  def refinedTypeFind(searchName: String)(using Quotes): quotes.reflect.TypeRepr => Option[(String, quotes.reflect.TypeRepr)] =
     import quotes.reflect.*
     (tr: TypeRepr) =>
-      tr.asMatchable match {
+      tr.asMatchable match
         case Refinement(parent, name, info) if name == searchName => Some(name, info)
         case Refinement(parent, _, _)                             => refinedTypeFind(searchName)(parent)
         case repr                                                 => None
-      }
 
   def refinedTypeFindλ(using Quotes): quotes.reflect.TypeRepr => Option[(String, quotes.reflect.TypeRepr)] =
     refinedTypeFind(nameλ)
 
-
-  def summon(using Quotes): quotes.reflect.TypeRepr => quotes.reflect.Term = 
+  def summon(using Quotes): quotes.reflect.TypeRepr => quotes.reflect.Term =
     import quotes.reflect.*
-    (typeRepr: TypeRepr) => Implicits.search(typeRepr) match
-      case res: ImplicitSearchSuccess => res.tree
-      case _                          => report.errorAndAbort(s"No ${typeRepr.show} implicit found.") 
+    (typeRepr: TypeRepr) =>
+      Implicits.search(typeRepr) match
+        case res: ImplicitSearchSuccess => res.tree
+        case _                          => report.errorAndAbort(s"No ${typeRepr.show} implicit found.")
 
-  def applyKforIdKTypeRepr(using Quotes): quotes.reflect.TypeRepr => quotes.reflect.TypeRepr = 
+  def applyKforIdKTypeRepr(using Quotes): List[quotes.reflect.TypeRepr] => quotes.reflect.TypeRepr =
     import quotes.reflect.*
-    (inner: TypeRepr) => TypeRepr.of[IdK].appliedTo(inner) match
-      case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
-      case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}") 
+    (inner: List[TypeRepr]) =>
+      TypeRepr.of[IdK].appliedTo(inner) match
+        case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
+        case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}")
+
+  @experimental
+  def newInstanceCall(using Quotes): (quotes.reflect.Symbol, List[quotes.reflect.TypeRepr], List[quotes.reflect.Term]) => quotes.reflect.Apply =
+    import quotes.reflect.*
+    (cls, typeArgs, valArgs) =>
+      New(Inferred(cls.typeRef))
+        .select(cls.primaryConstructor)
+        .appliedToTypes(typeArgs)
+        .appliedToArgs(valArgs)

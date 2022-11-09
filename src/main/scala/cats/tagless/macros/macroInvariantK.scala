@@ -45,18 +45,7 @@ object macroInvariantK:
               val mttree = inner.map(tr => TypeTree.of(using tr.asType))
 
               // https://github.com/lampepfl/dotty/discussions/16305
-              // IdK[Int] is encoded as
-              // java.lang.Object {
-              //   type λ >: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int] <: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int]
-              // }
-              // i.e. a Refinement type (Object + the type declaration)
-              val applyKTypeRepr = TypeRepr.of[IdK].appliedTo(inner) match
-                case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
-                case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}") 
-
-              val instanceK = Implicits.search(applyKTypeRepr) match
-                case res: ImplicitSearchSuccess => res.tree
-                case _                          => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.") 
+              val instanceK = summon(applyKforIdKTypeRepr(inner))
 
               Some(
                 Apply(
