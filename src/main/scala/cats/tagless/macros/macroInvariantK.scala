@@ -41,11 +41,8 @@ object macroInvariantK:
         argss =>
           typedTree.tpe.simplified.asMatchable match
             case AppliedType(_, inner) =>
-              val aeaf   = methodApply(eaf)(method, argss)
-              val mttree = inner.map(tr => TypeTree.of(using tr.asType))
-
-              // https://github.com/lampepfl/dotty/discussions/16305
-              val instanceK = summon(applyKforIdKTypeRepr(inner))
+              val aeaf      = methodApply(eaf)(method, argss)
+              val instanceK = summon(typeReprFor[ApplyK, IdK](inner))
 
               Some(
                 Apply(

@@ -1,7 +1,7 @@
 package cats.tagless.macros
 
 import cats.data.{Cokleisli, Tuple2K}
-import cats.tagless.{ApplyK, IdK}
+import cats.tagless.ApplyK
 
 import quoted.*
 import compiletime.asMatchable
@@ -97,12 +97,14 @@ object Utils:
         case res: ImplicitSearchSuccess => res.tree
         case _                          => report.errorAndAbort(s"No ${typeRepr.show} implicit found.")
 
-  def applyKforIdKTypeRepr(using Quotes): List[quotes.reflect.TypeRepr] => quotes.reflect.TypeRepr =
+  def typeReprFor[Alg[_[_[_]]]: Type, U[_]: Type](using Quotes): List[quotes.reflect.TypeRepr] => quotes.reflect.TypeRepr = {
     import quotes.reflect.*
     (inner: List[TypeRepr]) =>
-      TypeRepr.of[IdK].appliedTo(inner) match
-        case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
-        case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}")
+      val typeRepr = TypeRepr.of[U]
+      typeRepr.appliedTo(inner) match
+        case repr: Refinement => TypeRepr.of[Alg].appliedTo(repr.info)
+        case repr             => report.errorAndAbort(s"${typeRepr} has no proper Refinement type: ${repr}")
+  }
 
   @experimental
   def newInstanceCall(using Quotes): (quotes.reflect.Symbol, List[quotes.reflect.TypeRepr], List[quotes.reflect.Term]) => quotes.reflect.Apply =

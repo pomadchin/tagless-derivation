@@ -42,7 +42,6 @@ object macroContravariantK:
             // Cokleisli case is handled here
             // tr is Cokleisli; inner is G :: A :: B; innerTail is A :: B
             case AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol(classNameCokleisli)) =>
-              val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
               // Build a typeRepr for
               // ContravariantK[[W[_]] =>> Cokleisli[W, A, B]]
               // A and B are in the innerTail
@@ -100,10 +99,7 @@ object macroContravariantK:
             case at: AppliedType => report.errorAndAbort("Derive works with simple algebras only.")
 
             case inner =>
-              val mttree = List(TypeTree.of(using inner.asType))
-
-              // https://github.com/lampepfl/dotty/discussions/16305
-              val instanceK = summon(applyKforIdKTypeRepr(inner :: Nil))
+              val instanceK = summon(typeReprFor[ApplyK, IdK](inner :: Nil))
 
               Some(
                 Apply(
