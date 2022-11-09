@@ -41,16 +41,9 @@ object macroSemigroupalK:
         argss =>
           typedTree.tpe.simplified.asMatchable match
             case AppliedType(tr, inner) =>
-              val aafe   = methodApply(afe)(method, argss)
-              val aage   = methodApply(age)(method, argss)
-              val mttree = inner.map(tr => TypeTree.of(using tr.asType))
-
-              Some(
-                Apply(
-                  TypeApply(Ref(Symbol.requiredMethod("cats.data.Tuple2K.apply")), mttree),
-                  List(aafe, aage)
-                )
-              )
+              val aafe = methodApply(afe)(method, argss)
+              val aage = methodApply(age)(method, argss)
+              Some(newInstanceCall(Symbol.classSymbol(classNameTuple2K), inner, List(aafe, aage)))
             case _ => report.errorAndAbort("Derive works with simple algebras only.")
       )
     }

@@ -2,7 +2,6 @@ package cats.tagless.macros
 
 import cats.tagless.*
 import cats.~>
-import cats.data.Tuple2K
 
 import quoted.*
 import scala.annotation.experimental
@@ -41,9 +40,39 @@ object macroContravariantK:
         argss =>
           typedTree.tpe.simplified.asMatchable match
             // Cokleisli case is handled here
-            // head of inner is F :: G :: rest
-            case AppliedType(tr, _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol("cats.data.Cokleisli")) =>
-              val mttree = innerTail.map(tr => TypeTree.of(using tr.asType))
+            // tr is Cokleisli; inner is G :: A :: B; innerTail is A :: B
+            case AppliedType(tr, inner @ _ :: innerTail) if tr.baseClasses.contains(Symbol.classSymbol(classNameCokleisli)) =>
+              // Build a typeRepr for
+              // ContravariantK[[W[_]] =>> Cokleisli[W, A, B]]
+              // A and B are in the innerTail
+              val contravariantKTypeRepr =
+                TypeRepr
+                  .of[ContravariantK]
+                  .appliedTo(
+                    TypeLambda(
+                      List("W"),
+                      (tl: TypeLambda) =>
+                        List(
+                          TypeBounds(
+                            TypeRepr.of[Nothing],
+                            TypeLambda(
+                              List("_"),
+                              _ =>
+                                List(
+                                  TypeBounds(
+                                    TypeRepr.of[Nothing],
+                                    TypeRepr.of[Any]
+                                  )
+                                ),
+                              _ => TypeRepr.of[Any]
+                            )
+                          )
+                        ),
+                      (tl: TypeLambda) => AppliedType(tr, tl.param(0) :: innerTail)
+                    )
+                  )
+
+              val instanceK = summon(contravariantKTypeRepr)
 
               val methodArgsApply =
                 argss.flatten
@@ -58,7 +87,7 @@ object macroContravariantK:
               Some(
                 Apply(
                   Select.overloaded(
-                    TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ContravariantK.catsTaglessContravariantKForCokleisli")), mttree),
+                    instanceK,
                     "contramapK",
                     List(TypeRepr.of[F], TypeRepr.of[G]),
                     methodArgsApply
@@ -67,11 +96,11 @@ object macroContravariantK:
                 )
               )
 
-            case at: AppliedType =>
-              report.errorAndAbort("Derive works with simple algebras only.")
+            case at: AppliedType => report.errorAndAbort("Derive works with simple algebras only.")
 
             case inner =>
-              val mttree = List(TypeTree.of(using inner.asType))
+              val instanceK = summon(typeReprFor[ApplyK, IdK](inner :: Nil))
+
               Some(
                 Apply(
                   Select(eaf.asTerm, method),
@@ -79,7 +108,7 @@ object macroContravariantK:
                     _.collect { case term: Term =>
                       Apply(
                         Select.overloaded(
-                          TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ApplyK.catsTaglessApplyKForIdK")), mttree),
+                          instanceK,
                           "mapK",
                           List(TypeRepr.of[G], TypeRepr.of[F]),
                           List(term)

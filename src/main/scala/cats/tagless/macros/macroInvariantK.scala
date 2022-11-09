@@ -41,14 +41,14 @@ object macroInvariantK:
         argss =>
           typedTree.tpe.simplified.asMatchable match
             case AppliedType(_, inner) =>
-              val aeaf   = methodApply(eaf)(method, argss)
-              val mttree = inner.map(tr => TypeTree.of(using tr.asType))
+              val aeaf      = methodApply(eaf)(method, argss)
+              val instanceK = summon(typeReprFor[ApplyK, IdK](inner))
 
               Some(
                 Apply(
                   Apply(
                     Select.overloaded(
-                      TypeApply(Ref(Symbol.requiredMethod("cats.tagless.ApplyK.catsTaglessApplyKForIdK")), mttree),
+                      instanceK,
                       "imapK",
                       List(TypeRepr.of[F], TypeRepr.of[G]),
                       List(aeaf)
