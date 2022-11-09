@@ -44,11 +44,25 @@ object macroInvariantK:
               val aeaf   = methodApply(eaf)(method, argss)
               val mttree = inner.map(tr => TypeTree.of(using tr.asType))
 
+              // https://github.com/lampepfl/dotty/discussions/16305
+              // IdK[Int] is encoded as
+              // java.lang.Object {
+              //   type λ >: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int] <: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int]
+              // }
+              // i.e. a Refinement type (Object + the type declaration)
+              val applyKTypeRepr = TypeRepr.of[IdK].appliedTo(inner) match
+                case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
+                case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}") 
+
+              val instanceK = Implicits.search(applyKTypeRepr) match
+                case res: ImplicitSearchSuccess => res.tree
+                case _                          => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.") 
+
               Some(
                 Apply(
                   Apply(
                     Select.overloaded(
-                      TypeApply(Ref(Symbol.requiredMethod(s"${classNameApplyK}.catsTaglessApplyKForIdK")), mttree),
+                      instanceK,
                       "imapK",
                       List(TypeRepr.of[F], TypeRepr.of[G]),
                       List(aeaf)

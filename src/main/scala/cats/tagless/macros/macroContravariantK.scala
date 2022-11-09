@@ -105,40 +105,19 @@ object macroContravariantK:
             case inner =>
               val mttree = List(TypeTree.of(using inner.asType))
 
-              // AppliedType(
-              //   TypeRef(
-              //     TermRef(
-              //       ThisType(TypeRef(NoPrefix,module class cats)),
-              //       object tagless
-              //     ),
-              //     ApplyK
-              //   ),
-              //   List(
-              //     TypeRef(
-              //       AppliedType(
-              //         TypeRef(
-              //           TermRef(TermRef(ThisType(TypeRef(NoPrefix,module class cats)),object tagless), package),
-              //           IdK
-              //         ),
-              //         List(
-              //           TypeRef(
-              //             TermRef(ThisType(TypeRef(NoPrefix,module class <root>)), object scala),
-              //             Int
-              //           )
-              //         )
-              //       ),
-              //       λ
-              //     )
-              //   )
-              // )
+              // https://github.com/lampepfl/dotty/discussions/16305
+              // IdK[Int] is encoded as
+              // java.lang.Object {
+              //   type λ >: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int] <: [F >: scala.Nothing <: [_$3 >: scala.Nothing <: scala.Any] => scala.Any] => F[scala.Int]
+              // }
+              // i.e. a Refinement type (Object + the type declaration)
+              val applyKTypeRepr = TypeRepr.of[IdK].appliedTo(inner) match
+                case repr: Refinement => TypeRepr.of[ApplyK].appliedTo(repr.info)
+                case repr             => report.errorAndAbort(s"IdK has no proper Refinement type: ${repr}") 
 
-              // TypeRepr.of[IdK].appliedTo(inner)
-              // TODO: projection?
-              // build ApplyK and use search to summon
-              // val applyKTypeRepr = TypeRepr.of[ApplyK[IdK[Int]#λ]]
-              // val instanceK = Implicits.search(applyKTypeRepr) match
-              //   case res: ImplicitSearchSuccess => res.tree
-              //   case _ => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.")
+              val instanceK = Implicits.search(applyKTypeRepr) match
+                case res: ImplicitSearchSuccess => res.tree
+                case _                          => report.errorAndAbort(s"No ${applyKTypeRepr.show} implicit found.") 
 
               Some(
                 Apply(
@@ -147,7 +126,7 @@ object macroContravariantK:
                     _.collect { case term: Term =>
                       Apply(
                         Select.overloaded(
-                          TypeApply(Ref(Symbol.requiredMethod(s"${classNameApplyK}.catsTaglessApplyKForIdK")), mttree),
+                          instanceK,
                           "mapK",
                           List(TypeRepr.of[G], TypeRepr.of[F]),
                           List(term)
